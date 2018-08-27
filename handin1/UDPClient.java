@@ -12,13 +12,13 @@ public class UDPClient{
 
 		while(true) { //Keep ask user for messages. 
 			try {
-			aSocket = new DatagramSocket(); 
+			aSocket = new DatagramSocket();
 			InetAddress aHost = InetAddress.getByName("localhost");
 			String msg = msgScan.nextLine();
 			byte [] m = msg.getBytes();		                                                 
 			DatagramPacket request =
 				new DatagramPacket(m,  msg.length(), aHost, serverPort);
-			aSocket.send(request);			                        
+			aSocket.send(request);
 			byte[] buffer = new byte[1000];
 			DatagramPacket reply = new DatagramPacket(buffer, buffer.length);	
 			aSocket.receive(reply);
