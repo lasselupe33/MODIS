@@ -17,7 +17,7 @@ public class HelloNetwork {
                 socket.receive(received);
 
                 /** Create response packet */
-                String responseMsg = "Hello, " + new String(received.getData());
+                String responseMsg = new String(received.getData());
                 InetAddress address = received.getAddress();
                 int port = received.getPort();
 
