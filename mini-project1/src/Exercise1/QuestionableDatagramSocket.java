@@ -17,15 +17,19 @@ public class QuestionableDatagramSocket extends DatagramSocket {
     @Override
     public void send(DatagramPacket p) throws IOException {
         Random randomizer = new Random();
-        int outcome = randomizer.nextInt(5);
+        int outcome = randomizer.nextInt(4);
+
+        System.out.println(outcome);
 
         switch (outcome) {
             // Duplicate
             // Send twice
 
             // Reorder
-            currentPacket = p;
-            shouldReorder = true;
+            case 2:
+                currentPacket = p;
+                shouldReorder = true;
+                break;
 
 
             // Wait for another packet to arrive
