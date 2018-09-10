@@ -56,6 +56,7 @@ public class Estimator {
             int reordered = 0;
             int prevIndex = -1;
 
+            int index = 0;
             // Go through all received packets in order
             for (String overhead : receivedPackets) {
                 int packetIndex = Integer.parseInt(overhead.trim());
@@ -67,6 +68,7 @@ public class Estimator {
                     // ... else, this is a new packet, add it to our uniqueId's
                     uniqueIds.add(packetIndex);
 
+                    /*
                     // If our current packet index is larger than the previous, that means our package order between the
                     // two have been flipped, hence we update the amount of reordered packets by two.
                     if (packetIndex < prevIndex) {
@@ -74,6 +76,12 @@ public class Estimator {
                     }
 
                     prevIndex = packetIndex;
+                    */
+                    if (packetIndex != index) {
+                        reordered++;
+                        System.out.println(packetIndex);
+                    }
+                    index++;
                 }
             }
 
