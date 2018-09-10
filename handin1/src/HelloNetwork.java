@@ -1,9 +1,8 @@
 import java.io.IOException;
 import java.net.*;
-import java.sql.SQLOutput;
 
 public class HelloNetwork {
-    private static int serverPort = 7008;
+    private static int serverPort = 7007;
 
     public static void main(String[] args) {
         DatagramSocket socket = null;
@@ -16,8 +15,15 @@ public class HelloNetwork {
                 byte[] buffer = new byte[1000];
                 DatagramPacket received = new DatagramPacket(buffer, buffer.length);
                 socket.receive(received);
-                System.out.println(new String(received.getData()).trim());
 
+                /** Create response packet */
+                String responseMsg = new String(received.getData());
+                InetAddress address = received.getAddress();
+                int port = received.getPort();
+
+                /** Send response to user */
+                DatagramPacket response = new DatagramPacket(responseMsg.getBytes(), responseMsg.length(), address, port);
+                socket.send(response);
             } catch (SocketException e) {
                 e.printStackTrace();
             } catch (IOException e) {
