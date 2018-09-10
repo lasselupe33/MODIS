@@ -28,15 +28,15 @@ public class Estimator {
                 // Insert the overhead into the packet, without altering datagramSize
                 System.arraycopy(overhead.getBytes(), 0, msg, datagramSize - overhead.length(), overhead.length());
 
-                // Send the packet!
-                DatagramPacket packet = new DatagramPacket(msg, msg.length, destIp, destPort);
-                socket.send(packet);
-                try {
-                    // Wait the specified interval before sending the next packet
-                    Thread.sleep(interval);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                // Send the packets with required interval
+                setTimeout(() -> {
+                    DatagramPacket packet = new DatagramPacket(msg, msg.length, destIp, destPort);
+                    try {
+                        socket.send(packet);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }, interval * i);
             }
 
 
@@ -87,5 +87,17 @@ public class Estimator {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public static void setTimeout(Runnable runnable, int delay){
+        new Thread(() -> {
+            try {
+                Thread.sleep(delay);
+                runnable.run();
+            }
+            catch (Exception e){
+                System.err.println(e);
+            }
+        }).start();
     }
 }
