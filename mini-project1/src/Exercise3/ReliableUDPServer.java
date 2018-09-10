@@ -24,7 +24,7 @@ public class ReliableUDPServer {
             int serverIndex = currentIndex++;
             String initialMsg = "";
 
-            byte[] initialMsgBytes = Utils.embedOverhead(initialMsg.getBytes(), ackIndex, serverIndex);
+            byte[] initialMsgBytes = Utils.embedOverhead(initialMsg.getBytes(), ackIndex, serverIndex, false);
             DatagramPacket initialPacket = new DatagramPacket(initialMsgBytes, initialMsgBytes.length, packetBuffer.getAddress(), packetBuffer.getPort());
             socket.send(initialPacket);
 
@@ -34,6 +34,8 @@ public class ReliableUDPServer {
             socket.receive(packetBuffer);
 
             overhead = Utils.extractOverhead(packetBuffer.getData());
+
+            if(overhead[2] == 1) System.out.println("Everything failed");
 
             if (overhead[0] != ackIndex || overhead[1] != serverIndex + 1) {
 

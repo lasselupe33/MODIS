@@ -3,8 +3,8 @@ package Exercise3;
 import java.nio.ByteBuffer;
 
 public class Utils {
-    public static byte[] embedOverhead(byte[] msg, int clientIndex, int serverIndex) {
-        byte[] completeMsg = new byte[msg.length + 4 * 2];
+    public static byte[] embedOverhead(byte[] msg, int clientIndex, int serverIndex, boolean didError) {
+        byte[] completeMsg = new byte[msg.length + 4 * 2 + 1];
         byte[] clientBytes = intToBytes(clientIndex);
         byte[] serverBytes = intToBytes(serverIndex);
 
@@ -14,8 +14,10 @@ public class Utils {
                 completeMsg[i] = clientBytes[i];
             } else if (i < 8) {
                 completeMsg[i] = serverBytes[i - 4];
+            } else if (i == 8) {
+                completeMsg[i] = didError ? (byte) 1 : (byte) 0;
             } else {
-                completeMsg[i] = msg[i - 8];
+                completeMsg[i] = msg[i - 9];
             }
         }
 
@@ -36,9 +38,9 @@ public class Utils {
     }
 
     public static int[] extractOverhead(byte[] msg) {
-
         byte[] clientBytes = new byte[4];
         byte[] serverBytes = new byte[4];
+        int didError = msg[8];
 
         for(int i = 0; i < 8; i++) {
             if (i < 4) {
@@ -51,15 +53,14 @@ public class Utils {
         int clientIndex = fromByteArray(clientBytes);
         int serverIndex = fromByteArray(serverBytes);
 
-        return new int[] {clientIndex, serverIndex};
+        return new int[] {clientIndex, serverIndex, didError };
     }
 
     public static String extractMessage(byte[] msg) {
+        byte[] msgBytes = new byte[msg.length - 9];
 
-        byte[] msgBytes = new byte[msg.length - 8];
-
-        for (int i = 8; i < msg.length; i++) {
-            msgBytes[i - 8] = msg[i];
+        for (int i = 9; i < msg.length; i++) {
+            msgBytes[i - 9] = msg[i];
         }
 
         return new String(msgBytes);

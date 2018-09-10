@@ -22,7 +22,7 @@ public class ReliableUDPClient {
             String initialMsg = "";
             int clientIndex = currIndex++;
 
-            byte[] initialBytes = Utils.embedOverhead(initialMsg.getBytes(), clientIndex, -1);
+            byte[] initialBytes = Utils.embedOverhead(initialMsg.getBytes(), clientIndex, -1, false);
             DatagramPacket initialPacket = new DatagramPacket(initialBytes, initialBytes.length, hostIp, destPort);
             socket.send(initialPacket);
 
@@ -34,7 +34,8 @@ public class ReliableUDPClient {
             // Verify response
             int[] overhead = Utils.extractOverhead(packetBuffer.getData());
 
-            if (overhead[0] != clientIndex + 1) {
+            if (overhead[0] != clientIndex + 1 || overhead[2] == 1) {
+
                 // Error handling (Send packet indicating that everything failed, and start over)
 
                 return;
@@ -43,7 +44,7 @@ public class ReliableUDPClient {
             // Send msg to server
             int clientAckIndex = overhead[0];
             int serverAckIndex = overhead[1] + 1;
-            byte[] actualMessage = Utils.embedOverhead(string.getBytes(), clientAckIndex, serverAckIndex);
+            byte[] actualMessage = Utils.embedOverhead(string.getBytes(), clientAckIndex, serverAckIndex, false);
             DatagramPacket dataPacket = new DatagramPacket(actualMessage, actualMessage.length, packetBuffer.getAddress(), packetBuffer.getPort());
             socket.send(dataPacket);
 
