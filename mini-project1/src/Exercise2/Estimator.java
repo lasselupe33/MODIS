@@ -11,6 +11,16 @@ public class Estimator {
 
     public Estimator() {}
 
+    public static void main(String[] args) {
+        int size = Integer.parseInt(args[0]);
+        int amount = Integer.parseInt(args[1]);
+        int interval = Integer.parseInt(args[2]);
+        String host = args[3];
+        int destPort = Integer.parseInt(args[4]);
+
+        estimate(size, amount, interval, host, destPort);
+    }
+
     public static void estimate(int datagramSize, int amount, int interval, String host, int destPort) {
         try {
             receivedPackets = new ArrayList<>();
@@ -79,7 +89,6 @@ public class Estimator {
                     */
                     if (packetIndex != index) {
                         reordered++;
-                        System.out.println(packetIndex);
                     }
                     index++;
                 }
