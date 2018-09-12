@@ -7,7 +7,8 @@ import java.util.HashSet;
 
 public class Estimator {
     /** Keep an ordered list of the packets we receive */
-    public static ArrayList<String> receivedPackets;
+    private static ArrayList<String> receivedPackets;
+    private static DatagramSocket socket;
 
     public Estimator() {}
 
@@ -26,11 +27,24 @@ public class Estimator {
             receivedPackets = new ArrayList<>();
 
             // Setup socket. We use a timeout of 5 seconds
-            DatagramSocket socket = new DatagramSocket(7010);
+            socket = new DatagramSocket(7010);
             socket.setSoTimeout(5000);
             InetAddress destIp = InetAddress.getByName(host);
 
-            // Send all packets with an overhead, indicating the index of the packet send
+            // Send all packets with an overhead that indicates the index of the packet send (on separate thread)
+            sendMessages(datagramSize, amount, interval, destIp, destPort);
+
+            // Start receiving packets on new thread. Bail out after socket timeout exception is thrown
+            receiveMessages(datagramSize, amount);
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void sendMessages(int datagramSize, int amount, int interval, InetAddress destIp, int destPort) {
+        new Thread(() -> {
             for (int i = 0; i < amount; i++) {
                 String overhead = "" + i;
                 byte[] msg = new byte[datagramSize];
@@ -48,35 +62,46 @@ public class Estimator {
                     }
                 }, interval * i);
             }
+        }).run();
+    }
 
+    private static void receiveMessages(int datagramSize, int amount) {
+        new Thread(() -> {
+            try {
+                while (true) {
+                    byte[] buffer = new byte[datagramSize];
+                    DatagramPacket received = new DatagramPacket(buffer, buffer.length);
+                    socket.receive(received);
 
-            // Receive packets. Bail out after socket timeout exception is thrown
-            while (true) {
-                byte[] buffer = new byte[datagramSize];
-                DatagramPacket received = new DatagramPacket(buffer, buffer.length);
-                socket.receive(received);
-
-                // Add received packets to list in the order they're received
-                receivedPackets.add(new String(received.getData()));
+                    // Add received packets to list in the order they're received
+                    receivedPackets.add(new String(received.getData()));
+                }
+            } catch (SocketTimeoutException e) {
+                // When we get here, then analyse messages received
+                analyzeResult(amount);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (SocketTimeoutException e) {
-            // When we get here, then analyse messages received
-            HashSet<Integer> uniqueIds = new HashSet<>();
-            int duplicates = 0;
-            int reordered = 0;
-            int prevIndex = -1;
+        }).run();
+    }
 
-            int index = 0;
-            // Go through all received packets in order
-            for (String overhead : receivedPackets) {
-                int packetIndex = Integer.parseInt(overhead.trim());
+    private static void analyzeResult(int amount) {
+        HashSet<Integer> uniqueIds = new HashSet<>();
+        int duplicates = 0;
+        int reordered = 0;
+        int prevIndex = -1;
 
-                // If our unique ids already contain a packet index, that means we've hit a duplicate package
-                if (uniqueIds.contains(packetIndex)) {
-                    duplicates++;
-                } else {
-                    // ... else, this is a new packet, add it to our uniqueId's
-                    uniqueIds.add(packetIndex);
+        int index = 0;
+        // Go through all received packets in order
+        for (String overhead : receivedPackets) {
+            int packetIndex = Integer.parseInt(overhead.trim());
+
+            // If our unique ids already contain a packet index, that means we've hit a duplicate package
+            if (uniqueIds.contains(packetIndex)) {
+                duplicates++;
+            } else {
+                // ... else, this is a new packet, add it to our uniqueId's
+                uniqueIds.add(packetIndex);
 
                     /*
                     // If our current packet index is larger than the previous, that means our package order between the
@@ -87,26 +112,21 @@ public class Estimator {
 
                     prevIndex = packetIndex;
                     */
-                    if (packetIndex != index) {
-                        reordered++;
-                    }
-                    index++;
+                if (packetIndex != index) {
+                    reordered++;
                 }
+                index++;
             }
-
-            int lost = amount - uniqueIds.size();
-
-            System.out.println("Lost packets: " + lost + "/" + amount + ", " + (lost * 100) / amount + "%");
-            System.out.println("Duplicate packets: " + duplicates + "/" + amount + ", " + (duplicates * 100) / amount + "%");
-            System.out.println("Reordered packets: " + reordered);
-        } catch (UnknownHostException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
+
+        int lost = amount - uniqueIds.size();
+
+        System.out.println("Lost packets: " + lost + "/" + amount + ", " + (lost * 100) / amount + "%");
+        System.out.println("Duplicate packets: " + duplicates + "/" + amount + ", " + (duplicates * 100) / amount + "%");
+        System.out.println("Reordered packets: " + reordered);
     }
 
-    public static void setTimeout(Runnable runnable, int delay){
+    private static void setTimeout(Runnable runnable, int delay){
         new Thread(() -> {
             try {
                 Thread.sleep(delay);
