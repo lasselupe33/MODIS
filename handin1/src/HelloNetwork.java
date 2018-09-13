@@ -9,7 +9,7 @@ public class HelloNetwork {
 
         while (true) {
             try {
-                socket = new DatagramSocket(serverPort);
+                socket = new DatagramSocket(7007);
 
                 /** Wait for packet from user */
                 byte[] buffer = new byte[1000];

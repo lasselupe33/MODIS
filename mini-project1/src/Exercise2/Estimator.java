@@ -102,16 +102,7 @@ public class Estimator {
             } else {
                 // ... else, this is a new packet, add it to our uniqueId's
                 uniqueIds.add(packetIndex);
-
-                    /*
-                    // If our current packet index is larger than the previous, that means our package order between the
-                    // two have been flipped, hence we update the amount of reordered packets by two.
-                    if (packetIndex < prevIndex) {
-                        reordered += 2;
-                    }
-
-                    prevIndex = packetIndex;
-                    */
+                // If packetIndex doesn't correspond to the packets index in the list, the packet isn't in the right place
                 if (packetIndex != index) {
                     reordered++;
                 }
