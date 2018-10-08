@@ -28,7 +28,7 @@ class Sink {
     private static void subscribe() {
         try {
             socket = new Socket(EventIP, EventPort);
-            inFromManager = new BufferedReader(new InputStreamReader(socket.getInputStream()));;
+            inFromManager = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
             listen();
 
@@ -43,6 +43,12 @@ class Sink {
             try {
                 String msg = inFromManager.readLine();
                 System.out.println(msg);
+
+                // If msg is ever null that means the connection has been closed by the Manager, hence we wish to stop
+                // listening..
+                if (msg == null) {
+                    break;
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -53,6 +59,8 @@ class Sink {
     private static Thread unsubscribe() {
         return new Thread(() -> {
             try {
+                socket.shutdownInput();
+                socket.shutdownOutput();
                 socket.close();
 
                 System.out.println("bye");

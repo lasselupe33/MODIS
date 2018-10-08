@@ -12,7 +12,7 @@ public class Source {
         try {
             Runtime.getRuntime().addShutdownHook(shutDownSource());
 
-            sourceSocket = new Socket("localhost", 2000);
+            sourceSocket = new Socket("localhost", 3000);
 
             BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
@@ -22,7 +22,9 @@ public class Source {
             while (true) {
                 String message = inFromUser.readLine();
 
+                System.out.println(message);
                 outToManager.writeBytes(message);
+                outToManager.write('\n');
             }
         } catch (IOException e) {
             e.printStackTrace();
