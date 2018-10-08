@@ -1,5 +1,3 @@
-
-
 class Manager {
     // Should have two threads.
     // 1. dedicated to keeping track of the list of subscribers
