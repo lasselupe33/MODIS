@@ -42,13 +42,14 @@ class Sink {
         while (true) {
             try {
                 String msg = inFromManager.readLine();
-                System.out.println(msg);
 
                 // If msg is ever null that means the connection has been closed by the Manager, hence we wish to stop
                 // listening..
                 if (msg == null) {
                     break;
                 }
+
+                System.out.println(msg);
             } catch (IOException e) {
                 e.printStackTrace();
             }
