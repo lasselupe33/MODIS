@@ -5,6 +5,7 @@ import java.io.InputStreamReader;
 import java.net.Socket;
 
 public class Source {
+    private static int port = 3000;
     private static Socket sourceSocket;
     private static DataOutputStream outToManager;
 
@@ -12,7 +13,7 @@ public class Source {
         try {
             Runtime.getRuntime().addShutdownHook(shutDownSource());
 
-            sourceSocket = new Socket("localhost", 3000);
+            sourceSocket = new Socket("localhost", port);
 
             BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
 
@@ -22,7 +23,6 @@ public class Source {
             while (true) {
                 String message = inFromUser.readLine();
 
-                System.out.println(message);
                 outToManager.writeBytes(message);
                 outToManager.write('\n');
             }
