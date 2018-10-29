@@ -13,7 +13,7 @@ class Sink {
     public static void main(String[] args) {
         try {
             // Setup eventIP once the sink is created
-            EventIP = InetAddress.getLocalHost();
+            EventIP = InetAddress.getByName("10.26.6.101");
 
             // Subscribe to events on creation
             subscribe();
