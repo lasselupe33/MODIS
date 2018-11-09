@@ -7,10 +7,10 @@ import java.util.ArrayList;
 
 public class SetNewNodeInformationMsg implements Serializable {
     public ArrayList<SimpleNode> routingTable;
-    public int level;
+    public ArrayList<Integer> prevNodeLocation;
 
-    public SetNewNodeInformationMsg(ArrayList<SimpleNode> table, int level) {
+    public SetNewNodeInformationMsg(ArrayList<SimpleNode> table, ArrayList<Integer> prevNodeLocation) {
         this.routingTable = table;
-        this.level = level;
+        this.prevNodeLocation = prevNodeLocation;
     }
 }

@@ -10,107 +10,139 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Node {
+    // Contain basic information about self, in order to be able to filters self out of own routingTable
     private SimpleNode self;
-    private ServerSocket inSocket;
 
+    // Contains a collection of all resources that the current node contains
     private HashMap<Integer, String> resources;
 
-
-    private static char[] charMapping = new char[] { 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9' };
+    // Contains a routingTable that contains all other nodes in the current layer
     private ArrayList<SimpleNode> routingTable = new ArrayList<>();
-    private int currPos = 0;
-    private int currLevel = 0;
 
+    // Specifies the location to the current node, e.g. [1, 2, 3, 7] would map to a node on the fourth layer
+    private ArrayList<Integer> prevLocations = new ArrayList<>();
+
+    // Specifies the index of the next node in the current routing table that should propagate the next incoming node
+    // downwards if necessary
+    private int nextNodeIndex = 0;
+
+    // Contains a reference to a single node existing in the level below
     private SimpleNode levelBelow;
+
+    // Contains a reference to a single node existing in the level above
     private SimpleNode levelAbove;
 
+    /** Constructor that'll be used to generate a node without linking it to any networks */
     public Node(int port) {
-        // Setup own socket
-        try {
-            inSocket = new ServerSocket(port);
-            listen().start();
+        setupNode(port);
 
-            // Store information about self
-            self = new SimpleNode(InetAddress.getLocalHost(), port);
-            routingTable.add(self);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+        // Add self to initial routing table
+        routingTable.add(self);
     }
 
+    /** Constructor that'll connect a node to a given network on localhost via a node port that exists in the network */
     public Node(int port, int targetPort) {
         try {
-            setupNode(port, targetPort, InetAddress.getLocalHost());
+            setupNode(port);
+            connectToNetwork(port, targetPort, InetAddress.getLocalHost());
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
     }
 
+    /** Construct that'll connect a node to a given network via a node ip/port-pair that exists in the given network */
     public Node(int port, int targetPort, String targetIp) {
-        // Instantiate self
         try {
-            setupNode(port, targetPort, InetAddress.getByName(targetIp));
+            setupNode(port);
+            connectToNetwork(port, targetPort, InetAddress.getByName(targetIp));
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
-
-        // Call insertNode with self on given nodePort
     }
 
-    private void setupNode(int port, int targetPort, InetAddress targetIp) {
+    /** Internal helper that sets up core functionality of a node */
+    private void setupNode(int port) {
         try {
             // Store information about self
             self = new SimpleNode(InetAddress.getLocalHost(), port);
 
-            // Setup own socket
-            inSocket = new ServerSocket(port);
-            listen().start();
-
-            // Add self to network
-            NewNodeMsg msg = new NewNodeMsg(new SimpleNode(InetAddress.getLocalHost(), port), currLevel);
-            sendMessage(msg, new SimpleNode(targetIp, targetPort));
+            // Begin listening to incoming connections at specified port
+            listen(port).start();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private Thread listen() {
+    /** Internal helper that should be called once a new node should be added to the network */
+    private void connectToNetwork(int port, int targetPort, InetAddress targetIp) {
+        try {
+            NewNodeMsg msg = new NewNodeMsg(new SimpleNode(InetAddress.getLocalHost(), port), new ArrayList<>());
+            sendMessage(msg, new SimpleNode(targetIp, targetPort));
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+    }
+
+    /**
+     * Internal helper that'll continually listen to messages to the node and invoke appropriate methods based on
+     * messages received
+     */
+    private Thread listen(int port) {
         return new Thread(() -> {
-            while (true) {
-                try {
+            try {
+                ServerSocket inSocket = new ServerSocket(port);
+
+                while (true) {
+                    // Setup socket and accept incoming messages
                     Socket connectionSocket = inSocket.accept();
                     ObjectInputStream input = new ObjectInputStream(connectionSocket.getInputStream());
                     Object receivedObj = input.readObject();
 
-                    if (receivedObj instanceof NewNodeMsg) {
-                        insertNode(((NewNodeMsg) receivedObj));
-                    } else if (receivedObj instanceof NewSubNodeMsg) {
-                        insertSubNode(((NewSubNodeMsg)receivedObj).node);
-                    } else if (receivedObj instanceof UpdateRoutingTableMsg) {
-                        updateRoutingTable(((UpdateRoutingTableMsg) receivedObj).index, ((UpdateRoutingTableMsg) receivedObj).value);
-                    } else if (receivedObj instanceof SetNewNodeInformationMsg) {
-                        setNodeInformation((SetNewNodeInformationMsg) receivedObj);
-                    } else if (receivedObj instanceof UpdateCurrentPositionMsg) {
-                        currPos = ((UpdateCurrentPositionMsg) receivedObj).newPos;
+                    // Determine what should happen based on received message
+                    if (receivedObj instanceof NewNodeMsg)
+                    {
+                        NewNodeMsg msg = (NewNodeMsg) receivedObj;
+                        insertNode(msg);
+                    }
+                    else if (receivedObj instanceof NewSubNodeMsg)
+                    {
+                        NewSubNodeMsg msg = (NewSubNodeMsg) receivedObj;
+                        insertSubNode(msg.node);
+                    }
+                    else if (receivedObj instanceof UpdateRoutingTableMsg)
+                    {
+                        UpdateRoutingTableMsg msg = (UpdateRoutingTableMsg) receivedObj;
+                        updateRoutingTable(msg.index, msg.value);
+                    }
+                    else if (receivedObj instanceof SetNewNodeInformationMsg)
+                    {
+                        SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
+                        setNodeInformation(msg);
+                    }
+                    else if (receivedObj instanceof UpdateCurrentPositionMsg)
+                    {
+                        UpdateCurrentPositionMsg msg = (UpdateCurrentPositionMsg) receivedObj;
+                        nextNodeIndex = msg.newPos;
                     }
 
                     connectionSocket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
                 }
+            } catch (IOException e) {
+                System.out.println("Failed to bind node to " + self.ip + ":" + self.port);
+                e.printStackTrace();
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
             }
         });
     }
 
-    // During insertion
+    /** Internal helper to be called while inserting a new node to the network */
     public void insertNode(NewNodeMsg newNodeMsg) {
         // If there's room for more in our table, insert here
-        if (routingTable.size() < charMapping.length) {
-            // Insert at this level
+        if (routingTable.size() < Utils.charMapping.size()) {
             routingTable.add(newNodeMsg.node);
 
+            // Get the index of the newly inserted node
             int newIndex = routingTable.size() - 1;
 
             // Broadcast the newly added node to all nodes in routingTable
@@ -118,14 +150,16 @@ public class Node {
             broadcast(msg);
 
             // Update newly inserted node's routingTable to match current routingTable
-            sendMessage(new SetNewNodeInformationMsg(routingTable, newNodeMsg.currLevel), newNodeMsg.node);
+            sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations), newNodeMsg.node);
         } else {
             // Else traverse down to next level
-            SimpleNode nodeAtCurrPos = routingTable.get(currPos);
-            currPos = (currPos + 1) % charMapping.length;
+            SimpleNode nodeAtCurrPos = routingTable.get(nextNodeIndex);
+
+            // Ensure nextNodeIndex points to next node in current routingTable
+            nextNodeIndex = (nextNodeIndex + 1) % Utils.charMapping.size();
 
             // Broadcast currPos
-            UpdateCurrentPositionMsg updateMsg = new UpdateCurrentPositionMsg(currPos);
+            UpdateCurrentPositionMsg updateMsg = new UpdateCurrentPositionMsg(nextNodeIndex);
             broadcast(updateMsg);
 
             // Propagate newNode message down to the next level
@@ -133,44 +167,42 @@ public class Node {
         }
     }
 
-    public void insertSubNode(SimpleNode subNode) {
-            if (this.levelBelow == null) {
-                this.levelBelow = subNode;
+    /** Internal helper to be called once a node that is currently being inserted should traverse down to the next level */
+    private void insertSubNode(SimpleNode subNode) {
+        // If there doesn't exist a level below the specified node, create it now
+        if (this.levelBelow == null) {
+            this.levelBelow = subNode;
 
-                // Update newly inserted node's routingTable to match current routingTable
-                sendMessage(new SetNewNodeInformationMsg(new ArrayList<>(), currLevel + 1), subNode);
-            } else {
-                // Propagate newNode message down to the next level
-                sendMessage(new NewNodeMsg(subNode, currLevel + 1), levelBelow);
-            }
-    }
-
-    public void updateRoutingTable(int index, SimpleNode node) {
-        // Insert new node to routing table
-        if (routingTable.size() > index) {
-            routingTable.set(index, node);
+            // Update newly inserted node's routingTable to match current routingTable
+            ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
+            subNodeRoutingTable.add(subNode);
+            sendMessage(new SetNewNodeInformationMsg(subNodeRoutingTable, getLocation()), subNode);
         } else {
-            routingTable.add(node);
-        }
-
-        // DEBUGGING:
-        if (self.port == 4020) {
-            for (var i = 0; i < routingTable.size(); i++) {
-                //System.out.println("Table@" + i + ": " + routingTable.get(i).port);
-            }
+            // ... else propagate newNode message down to the next level
+            sendMessage(new NewNodeMsg(subNode, getLocation()), levelBelow);
         }
     }
 
-    public void setNodeInformation(SetNewNodeInformationMsg msg) {
-        this.routingTable = msg.routingTable;
-        this.currLevel = msg.level;
+    /** Internal helper that sends a single message to a specified node */
+    private void sendMessage(Object msg, SimpleNode node) {
+        try {
+            // Generate a connection, write the object, and then close the connection
+            Socket socket = new Socket(node.ip, node.port);
+            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+            output.writeObject(msg);
+            socket.close();
+        } catch (IOException e) {
+            System.out.println("Node " + self.ip + ":" + self.port + " failed to connect to node at " + node.ip + ":" + node.port);
+            e.printStackTrace();
+        }
     }
 
-    public void broadcast(Object msg) {
+    /** Internal helper that broadcasts a specified message to all nodes expect self in a routingTable */
+    private void broadcast(Object msg) {
         // Broadcast to own network that a new node has been inserted
         for (SimpleNode n : routingTable) {
             // We don't need to broadcast information to ourselves.
-            if (n.port == self.port && n.ip == self.ip) {
+            if (n.port == self.port && n.ip.equals(self.ip)) {
                 continue;
             }
 
@@ -178,16 +210,53 @@ public class Node {
         }
     }
 
-    public void sendMessage(Object msg, SimpleNode node) {
-        // Broadcast to own network that a new node has been inserted
-        try {
-            Socket socket = new Socket(node.ip, node.port);
-            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-            output.writeObject(msg);
-            socket.close();
-        } catch (IOException e) {
-            System.out.println("Failed to connect to node at " + node.ip + " " + node.port);
+    /** Internal helper that returns the location of the current node */
+    private ArrayList<Integer> getLocation() {
+        ArrayList<Integer> location = (ArrayList<Integer>) prevLocations.clone();
+
+        // Insert location of self into location array
+        location.add(getIndexOfSelf());
+
+        return location;
+    }
+
+    /** Internal helper that returns the index of the current instance of the Node in the routingTable */
+    private int getIndexOfSelf() {
+        for (int i = 0; i < routingTable.size(); i++) {
+            SimpleNode n = routingTable.get(i);
+
+            // When we've found a matching index, return it!
+            if (n.port == self.port && n.ip.equals(self.ip)) {
+                return i;
+            }
         }
+
+        // If we get here, then no match was found..
+        return -1;
+    }
+
+    /**
+     * Internal helper that inserts/updates a node in the routingTable
+     *
+     * NB: Executed once an UpdateRoutingTableMsg is sent.
+     */
+    private void updateRoutingTable(int index, SimpleNode node) {
+        // Insert new node to routing table
+        if (routingTable.size() > index) {
+            routingTable.set(index, node);
+        } else {
+            routingTable.add(node);
+        }
+    }
+
+    /**
+     * Internal helper that'll set information about the current network to the node.
+     *
+     * NB: Executed once a SetNewNodeInformationMsg is sent to the node
+     */
+    private void setNodeInformation(SetNewNodeInformationMsg msg) {
+        this.routingTable = msg.routingTable;
+        this.prevLocations = msg.prevNodeLocation;
     }
 
 /*    public void getResource(hashCode code) {
