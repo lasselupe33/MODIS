@@ -301,16 +301,19 @@ public class Node {
 
     }
 
+    /** Internal helper that insert a resource in current node **/
     public void insertResource(PutMsg msg) {
         resources.put(msg.key, msg.value);
     }
 
+    /** Internal helper that send the resource to the node nearest given index **/
     public void sendToNearestNode(PutMsg msg, int index) {
-        int nearestIndex = Utils.getNearestIndex(index);
+        int nearestIndex = Utils.getNearestIndexWithNode(routingTable, index);
         SimpleNode nearestNode = routingTable.get(nearestIndex);
         InsertResourceInNearestIndexMsg insertMsg = new InsertResourceInNearestIndexMsg(msg);
         sendMessage(insertMsg, nearestNode);
     }
+    
 
 /*    public void getResource(hashCode code) {
         Node currNode = this;
