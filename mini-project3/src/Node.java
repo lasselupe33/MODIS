@@ -137,7 +137,7 @@ public class Node {
     }
 
     /** Internal helper to be called while inserting a new node to the network */
-    public void insertNode(NewNodeMsg newNodeMsg) {
+    private void insertNode(NewNodeMsg newNodeMsg) {
         // If there's room for more in our table, insert here
         if (routingTable.size() < Utils.charMapping.size()) {
             routingTable.add(newNodeMsg.node);
