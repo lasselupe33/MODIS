@@ -1,11 +1,15 @@
 package Messages;
 
 import java.io.Serializable;
+import java.net.InetAddress;
 
-public class GetMsg implements Serializable {
-    public int key;
+public class GetMsg extends TransferMsg implements Serializable {
+    public int port;
+    public InetAddress ip;
 
-    public GetMsg(int key) {
-        this.key = key;
+    public GetMsg(int key, int port, InetAddress ip) {
+        super(key);
+        this.port = port;
+        this.ip = ip;
     }
 }

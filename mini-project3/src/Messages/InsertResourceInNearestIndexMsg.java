@@ -1,6 +1,8 @@
 package Messages;
 
-public class InsertResourceInNearestIndexMsg {
+import java.io.Serializable;
+
+public class InsertResourceInNearestIndexMsg implements Serializable {
     public PutMsg putMsg;
 
     public InsertResourceInNearestIndexMsg(PutMsg putMsg) {

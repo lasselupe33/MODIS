@@ -2,12 +2,11 @@ package Messages;
 
 import java.io.Serializable;
 
-public class PutMsg implements Serializable {
-    public int key;
+public class PutMsg extends TransferMsg implements Serializable {
     public String value;
 
     public PutMsg(int key, String value) {
-        this.key = key;
+        super(key);
         this.value = value;
     }
 }

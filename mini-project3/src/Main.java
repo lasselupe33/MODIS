@@ -8,6 +8,8 @@ public class Main {
                 new Node(15001 + i, 15000);
             }
 
+            System.out.println("Nodes ready");
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         }

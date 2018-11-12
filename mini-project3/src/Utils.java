@@ -159,4 +159,12 @@ public class Utils {
         // If we get here, then there exists no node in the network, return -1
         return -1;
     }
+
+    /** Simple helper that prints debugging info */
+    public static void keyValueDebugInfo(int key, String value) {
+        System.out.println("key: " + key);
+        System.out.println("value: " + value);
+        System.out.println("hashedKey: " + Utils.hashString("" + key));
+        System.out.println("location: " + Utils.convertHashToLocation(Utils.hashString("" + key)));
+    }
 }

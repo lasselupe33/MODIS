@@ -1,4 +1,5 @@
 import Messages.GetMsg;
+import Messages.PutMsg;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -17,19 +18,25 @@ public class GetClient {
                 InetAddress ip = args.length == 3 ? InetAddress.getByName(args[2]) : InetAddress.getLocalHost();
 
                 // Get message to send, and then begin listening
-                GetMsg msg = new GetMsg(key);
+                //Utils.keyValueDebugInfo(key, "");
                 Socket socket = new Socket(ip, port);
-
-                // Create streams
-                ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
-                ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+                GetMsg msg = new GetMsg(key, socket.getPort(), socket.getInetAddress());
 
                 // Send request and await result
+                ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
                 output.writeObject(msg);
-                Object result = input.readObject();
+
+                // Await result
+                ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+                PutMsg result = (PutMsg) input.readObject();
 
                 // Once result has been delivered, log it and terminate execution
-                System.out.println(result);
+                if (result != null) {
+                    System.out.println(result.value);
+                } else {
+                    System.out.println("No resource was found/mixed values has been set with given key");
+                }
+
                 socket.close();
             } else {
                 System.out.println("Invalid arguments supplied, I require a key, a port and optionally an ip");
