@@ -9,6 +9,9 @@ public class Utils {
     // An array that contains a mapping for all possible values in a hashed string to an index in the array
     public static List<Character> charMapping = Arrays.asList('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
 
+    // Specifies the length of a hashed string
+    public static int hashStringLength = 62;
+
     /** Test method */
     public static void main(String[] args) {
         String testString = "Hello world";
