@@ -1,8 +1,10 @@
 package Messages;
 
-public class PutMsg {
-    private int key;
-    private String value;
+import java.io.Serializable;
+
+public class PutMsg implements Serializable {
+    public int key;
+    public String value;
 
     public PutMsg(int key, String value) {
         this.key = key;

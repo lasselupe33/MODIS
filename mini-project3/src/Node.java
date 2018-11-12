@@ -124,6 +124,16 @@ public class Node {
                         UpdateCurrentPositionMsg msg = (UpdateCurrentPositionMsg) receivedObj;
                         nextNodeIndex = msg.newPos;
                     }
+                    else if (receivedObj instanceof PutMsg)
+                    {
+                        PutMsg msg = (PutMsg) receivedObj;
+                        // call method here
+                    }
+                    else if (receivedObj instanceof GetMsg)
+                    {
+                        GetMsg msg = (GetMsg) receivedObj;
+                        // call method here
+                    }
 
                     connectionSocket.close();
                 }
