@@ -6,7 +6,7 @@ import java.io.Serializable;
 
 
 public class RequestResourcesMsg implements Serializable {
-    SimpleNode requestingNode;
+    public SimpleNode requestingNode;
 
     public RequestResourcesMsg(SimpleNode requestingNode){
         this.requestingNode = requestingNode;

@@ -104,6 +104,28 @@ public class Node {
                         NewNodeMsg msg = (NewNodeMsg) receivedObj;
                         insertNode(msg);
                     }
+                    else if (receivedObj instanceof RequestResourcesMsg)
+                    {
+                        RequestResourcesMsg requestMsg = (RequestResourcesMsg) receivedObj;
+
+                        SendResourcesMsg sendMsg = new SendResourcesMsg(resources, false);
+
+                        sendMessage(sendMsg, requestMsg.requestingNode);
+                    }
+                    else if (receivedObj instanceof SendResourcesMsg)
+                    {
+                        SendResourcesMsg msg = (SendResourcesMsg) receivedObj;
+                        if (msg.isSubNode) {
+                            resources = msg.resources;
+                        } else {
+                            getResourcesFromNeighbour(msg.resources);
+                        }
+                    }
+                    else if (receivedObj instanceof UpdateResourcesMsg)
+                    {
+                        UpdateResourcesMsg msg = (UpdateResourcesMsg) receivedObj;
+                        resources = msg.resources;
+                    }
                     else if (receivedObj instanceof NewSubNodeMsg)
                     {
                         NewSubNodeMsg msg = (NewSubNodeMsg) receivedObj;
@@ -129,15 +151,15 @@ public class Node {
                         PutMsg msg = (PutMsg) receivedObj;
                         traverse(msg);
                     }
-                    else if (receivedObj instanceof GetMsg)
-                    {
-                        GetMsg msg = (GetMsg) receivedObj;
-                        // call method here
-                    }
                     else if (receivedObj instanceof InsertResourceInNearestIndexMsg)
                     {
                         PutMsg msg = ((InsertResourceInNearestIndexMsg) receivedObj).putMsg;
                         insertResource(msg);
+                    }
+                    else if (receivedObj instanceof GetMsg)
+                    {
+                        GetMsg msg = (GetMsg) receivedObj;
+                        // call method here
                     }
 
                     connectionSocket.close();
@@ -167,8 +189,8 @@ public class Node {
             // Update newly inserted node's routingTable to match current routingTable
             sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations), newNodeMsg.node);
 
-            // Get recources from neighbour
-            requestResources(newIndex);
+            // Request resources from neighbour
+            requestResourcesFromNeighbour(newIndex);
         } else {
             // Else traverse down to next level
             SimpleNode nodeAtCurrPos = routingTable.get(nextNodeIndex);
@@ -186,12 +208,39 @@ public class Node {
     }
 
     /** Internal helper that requests recources from the nodes left neighbour*/
-    private void requestResources(int index) {
+    private void requestResourcesFromNeighbour(int index) {
         SimpleNode leftNeighbour = routingTable.get(index-1);
 
         RequestResourcesMsg msg = new RequestResourcesMsg(self);
 
         sendMessage(msg, leftNeighbour);
+    }
+
+    /** Internal helper that gets resources from the left neighbour */
+    private void getResourcesFromNeighbour(HashMap<Integer, String> resourcesFromNeighbour) {
+        int index = routingTable.size() - 1;
+
+        int neighbourIndex = index-1;
+
+        // Go through resources and check whether they should be moved to this node
+        for(Integer key : resourcesFromNeighbour.keySet()){
+            String hashedKey = Utils.hashString(""+key);
+            char charInKey = hashedKey.charAt(prevLocations.size());
+            int indexOfKeyChar = Utils.convertCharToIndex(charInKey);
+
+            int distanceFromSelf = Math.abs(index - indexOfKeyChar);
+            int distanceFromNeighbour = Math.abs(neighbourIndex - indexOfKeyChar);
+
+            if(distanceFromSelf < distanceFromNeighbour) {
+                resources.put(key, resourcesFromNeighbour.get(key));
+                resourcesFromNeighbour.remove(key);
+            }
+        }
+
+        // Send updated resources map back to neighbour
+        UpdateResourcesMsg msg = new UpdateResourcesMsg(resourcesFromNeighbour);
+        SimpleNode neighbourNode = routingTable.get(neighbourIndex);
+        sendMessage(msg, neighbourNode);
     }
 
     /** Internal helper to be called once a node that is currently being inserted should traverse down to the next level */
@@ -204,6 +253,11 @@ public class Node {
             ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
             subNodeRoutingTable.add(subNode);
             sendMessage(new SetNewNodeInformationMsg(subNodeRoutingTable, getLocation()), subNode);
+
+            // Send resources to subNode and clear own resource table
+            sendMessage(new SendResourcesMsg(resources, true), subNode);
+            resources.clear();
+
         } else {
             // ... else propagate newNode message down to the next level
             sendMessage(new NewNodeMsg(subNode, getLocation()), levelBelow);
