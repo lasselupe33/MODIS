@@ -161,6 +161,9 @@ public class Node {
 
             // Update newly inserted node's routingTable to match current routingTable
             sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations), newNodeMsg.node);
+
+            // Get recources from neighbour
+            requestResources(newIndex);
         } else {
             // Else traverse down to next level
             SimpleNode nodeAtCurrPos = routingTable.get(nextNodeIndex);
@@ -175,6 +178,15 @@ public class Node {
             // Propagate newNode message down to the next level
             sendMessage(new NewSubNodeMsg(newNodeMsg.node), nodeAtCurrPos);
         }
+    }
+
+    /** Internal helper that requests recources from the nodes left neighbour*/
+    private void requestResources(int index) {
+        SimpleNode leftNeighbour = routingTable.get(index-1);
+
+        RequestResourcesMsg msg = new RequestResourcesMsg(self);
+
+        sendMessage(msg, leftNeighbour);
     }
 
     /** Internal helper to be called once a node that is currently being inserted should traverse down to the next level */
