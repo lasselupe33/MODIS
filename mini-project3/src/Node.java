@@ -259,6 +259,38 @@ public class Node {
         this.prevLocations = msg.prevNodeLocation;
     }
 
+
+    public void traverse(SimpleNode node, PutMsg msg) {
+        // Figure out where to traverse down
+
+        char character = msg.hashString[prevLocations.size()];
+        int index = -1;
+
+        for (Character c : Utils.charMapping) {
+            index++;
+            if (c.equals(character)) break;
+        }
+
+        SimpleNode nextNode = routingTable.get(index);
+
+        // If the location in the routing table does not have a reference to a subNode...
+        if (nextNode == null) {
+
+            // ...check if node has been killed...
+                // Broadcast that node has been killed
+                // Use prev node to find a reference to the correct level below
+
+            // ...else insert resource here.
+            resources.put(msg.key, msg.value);
+        } else if (nextNode.ip.equals(self.ip) && nextNode.port == self.port){
+            sendMessage(msg, levelBelow);
+        } else {
+            TraverseDownMsg travMsg = new TraverseDownMsg(msg);
+            sendMessage(travMsg, nextNode);
+        }
+
+    }
+
 /*    public void getResource(hashCode code) {
         Node currNode = this;
 
@@ -277,13 +309,7 @@ public class Node {
 
     }
 
-    public Node traverse(char c) {
-        // Figure out where to traverse down
 
-        // If node never responds
-            // Broadcast that node has been killed
-            // Use prev node to find a reference to the correct level below
-    }
 
 */
 }
