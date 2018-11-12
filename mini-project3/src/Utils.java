@@ -50,8 +50,8 @@ public class Utils {
     }
 
     /**
-     * Helper method that converts a hash value to a location represted in an ArrayList, wherein the first value
-     * represents in the first layer, the second value a node on the second layer, and so on..
+     * Helper method that converts a hash value to a location represented in an ArrayList, wherein the first value
+     * represents a node in the first layer, the second value a node in the second layer, and so on..
      */
     public static ArrayList<Integer> convertHashToLocation(String hash) {
         // Lowercase hash to ensure that it's at the correct format
