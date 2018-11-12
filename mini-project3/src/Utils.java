@@ -1,3 +1,7 @@
+import Models.SimpleNode;
+
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
@@ -9,11 +13,8 @@ public class Utils {
     // An array that contains a mapping for all possible values in a hashed string to an index in the array
     public static List<Character> charMapping = Arrays.asList('a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
 
-    // Specifies the length of a hashed string
-    public static int hashStringLength = 62;
-
     /** Test method */
-    public static void main(String[] args) {
+    public static void main(String[] args) throws UnknownHostException {
         String testString = "Hello world";
 
         String hashed = hashString(testString);
@@ -24,6 +25,26 @@ public class Utils {
 
         String reversedHash = convertLocationToHash(location);
         System.out.println("Location to hash: " + reversedHash);
+
+
+        // "Tests" for getNearestIndexWithNode
+        ArrayList<SimpleNode> testArray = new ArrayList<>();
+        SimpleNode testNode = new SimpleNode(InetAddress.getLocalHost(), 2000);
+
+        for (int i = 0; i < 20; i++) {
+            testArray.add(null);
+        }
+
+        testArray.set(5, testNode);
+        testArray.set(9, testNode);
+
+        System.out.println(testArray);
+        System.out.println(getNearestIndexWithNode(testArray, 6));
+        System.out.println(getNearestIndexWithNode(testArray, 10));
+        System.out.println(getNearestIndexWithNode(testArray, 7));
+        System.out.println(getNearestIndexWithNode(testArray, 18));
+        System.out.println(getNearestIndexWithNode(testArray, 1));
+
     }
 
     // SHA-256 Hashing - borrowed from https://stackoverflow.com/questions/2624192/good-hash-function-for-strings
@@ -85,5 +106,57 @@ public class Utils {
     /** Helper that returns the character associated with a given index in the network */
     public static int convertCharToIndex(char c) {
         return charMapping.indexOf(c);
+    }
+
+    /**
+     * Helper that returns the index of an array that is nearest to the returned index, but actually contains a value
+     *
+     * NB: If two indicies are equally close, then the lower index will be returned
+     */
+    public static int getNearestIndexWithNode(ArrayList<SimpleNode> array, int i) {
+        // Store the highest and lowest index we've visited so far
+        int minIndex = array.size() - 1;
+        int maxIndex = 0;
+
+        // Specify whether we should check a lower or higher index
+        boolean checkLower = true;
+
+
+        int currTestIndex;
+        int j = 0; // Helps specifying what index we should currently be testing
+
+
+        while (minIndex != 0 || maxIndex != array.size() - 1) {
+            // If there's still a lower index and we're currently visiting lower indexes, or if we've reached maxIndex,
+            // then check a lower index
+            if (maxIndex == array.size() - 1 || (checkLower && minIndex != 0)) {
+                currTestIndex = Math.max(0, i - 1 - (j / 2));
+            } else {
+                // ... else check a higher index than base
+                currTestIndex = Math.min(array.size(), i + 1 + (j / 2));
+            }
+
+            // If we reach a testIndex that has a node, return the found index!
+            if (array.get(currTestIndex) != null) {
+                return currTestIndex;
+            }
+
+            // Bump up j.
+            j++;
+
+            // If we've reached either top or bottom, increment again in order to ensure that the checked index will
+            // increase every time
+            if (minIndex == 0 || maxIndex == array.size() - 1) {
+                j++;
+            }
+
+            // Update variables
+            minIndex = Math.min(minIndex, currTestIndex);
+            maxIndex = Math.max(maxIndex, currTestIndex);
+            checkLower = !checkLower;
+        }
+
+        // If we get here, then there exists no node in the network, return -1
+        return -1;
     }
 }
