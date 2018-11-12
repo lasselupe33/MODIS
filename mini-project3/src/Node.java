@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Node {
-    // Contain basic information about self, in order to be able to filters self out of own routingTable
+    // Contain basic information about self, in order to be able to filter self out of own routingTable
     private SimpleNode self;
 
     // Contains a collection of all resources that the current node contains
@@ -84,7 +84,7 @@ public class Node {
     }
 
     /**
-     * Internal helper that'll continually listen to messages to the node and invoke appropriate methods based on
+     * Internal helper that'll continually listen for messages send to the node and invoke appropriate methods based on
      * messages received
      */
     private Thread listen(int port) {
