@@ -392,7 +392,7 @@ public class Node {
         if (index == 0){
             // If levelAbove is null we are at the first node inserted and there is no backup table to update
             if (levelAboveList.size() > 0){
-                sendMessage(updateBackupResourcesMsg, levelAboveList.get(0));
+                sendMessage(updateBackupResourcesMsg, levelAboveList);
             }
         } else {
             SimpleNode neighbourNode = routingTable.get(index-1);
@@ -446,7 +446,7 @@ public class Node {
                 return true;
             } else {
                 // ... else, propagate the message down
-                sendMessage(msg, levelBelowList.get(0));
+                sendMessage(msg, levelBelowList);
                 return false;
             }
         } else {
@@ -519,18 +519,41 @@ public class Node {
         sendMessage(new ReturnMsg(msg.key, resource), msg.returnNode);
     }
 
-    /** Internal helper that sends a single message to a specified node */
+    /**
+     * If a list of nodes is passed to the sendMessage, then we'll attempt to propagate the message to the first available
+     * node
+     */
+    private void sendMessage(Object msg, ArrayList<SimpleNode> nodes) {
+        for (int i = 0; i < nodes.size(); i++) {
+            try {
+                sendMessageUnsafe(msg, nodes.get(i));
+
+                // If we get here, then the send succeeded, no need to try another node
+                break;
+            } catch (IOException e) {
+                // Continue
+            }
+        }
+    }
+
+    /** Internal helper that handles errors related to sending messages */
     private void sendMessage(Object msg, SimpleNode node) {
         try {
-            // Generate a connection, write the object, and then close the connection
-            Socket socket = new Socket(node.ip, node.port);
-            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-            output.writeObject(msg);
-            socket.close();
+            sendMessageUnsafe(msg, node);
         } catch (IOException e) {
             System.out.println("Node " + self.ip + ":" + self.port + " failed to connect to node at " + node.ip + ":" + node.port);
             e.printStackTrace();
         }
+    }
+
+    /** Internal helper that sends a single message to a specified node */
+    private void sendMessageUnsafe(Object msg, SimpleNode node) throws IOException {
+        // Generate a connection, write the object, and then close the connection
+        Socket socket = new Socket();
+        socket.connect(new InetSocketAddress(node.ip, node.port), 2000);
+        ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+        output.writeObject(msg);
+        socket.close();
     }
 
     /** Internal helper that broadcasts a specified message to all nodes expect self in a routingTable */
