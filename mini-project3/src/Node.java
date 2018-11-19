@@ -31,11 +31,11 @@ public class Node {
     // downwards if necessary
     private int nextNodeIndex = 0;
 
-    // Contains a reference to a single node existing in the level below
-    private SimpleNode levelBelow;
+    // Contains a reference to nodes existing in the level below
+    private ArrayList<SimpleNode> levelBelowList = new ArrayList<>();
 
-    // Contains a reference to a single node existing in the level above
-    private SimpleNode levelAbove;
+    // Contains a reference to nodes existing in the level above
+    private ArrayList<SimpleNode> levelAboveList = new ArrayList<>();
 
     // Contains a reference to the socket that a get value should be returned to, if any exists.
     private Socket getReturnSocket;
@@ -172,7 +172,7 @@ public class Node {
                     {
                         SetNewSubNodeInformationMsg msg = (SetNewSubNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
-                        levelAbove = msg.levelAbove;
+                        levelAboveList.add(msg.levelAbove);
                     }
                     else if (receivedObj instanceof UpdateCurrentPositionMsg)
                     {
@@ -250,8 +250,8 @@ public class Node {
                         }
                     }
 
-                    if (this.levelBelow != null) {
-                        if (!checkIfNodeIsAlive(this.levelBelow)) {
+                    if (levelBelowList.size() > 0) {
+                        if (!checkIfNodeIsAlive(levelBelowList.get(0))) {
                             System.out.println("Level below died!");
                         }
                     }
@@ -299,8 +299,8 @@ public class Node {
     /** Internal helper to be called once a node that is currently being inserted should traverse down to the next level */
     private void insertSubNode(SimpleNode subNode) {
         // If there doesn't exist a level below the specified node, create it now
-        if (this.levelBelow == null) {
-            this.levelBelow = subNode;
+        if (levelBelowList.size() == 0) {
+            levelBelowList.add(subNode);
 
             // Update newly inserted node's routingTable to match current routingTable
             ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
@@ -316,7 +316,7 @@ public class Node {
 
         } else {
             // ... else propagate newNode message down to the next level
-            sendMessage(new NewNodeMsg(subNode, getLocation()), levelBelow);
+            sendMessage(new NewNodeMsg(subNode, getLocation()), levelBelowList.get(0));
         }
     }
 
@@ -375,8 +375,8 @@ public class Node {
 
         if (index == 0){
             // If levelAbove is null we are at the first node inserted and there is no backup table to update
-            if (levelAbove != null){
-                sendMessage(updateBackupResourcesMsg, levelAbove);
+            if (levelAboveList.size() > 0){
+                sendMessage(updateBackupResourcesMsg, levelAboveList.get(0));
             }
         } else {
             SimpleNode neighbourNode = routingTable.get(index-1);
@@ -416,7 +416,7 @@ public class Node {
             sendToNearestNode(msg, index);
         } else if (nextNode.ip.equals(self.ip) && nextNode.port == self.port) {
             // ... else, if we already is the correct node, determine if we can go down further
-            if (levelBelow == null) {
+            if (levelBelowList.size() == 0) {
                 // ... if we can't, insert/get resource based on message
                 if (msg instanceof PutMsg)
                 {
@@ -428,7 +428,7 @@ public class Node {
                 }
             } else {
                 // ... else, propagate the message down
-                sendMessage(msg, levelBelow);
+                sendMessage(msg, levelBelowList.get(0));
             }
         } else {
             // ... else, go to the correct node in the current routing table
