@@ -3,7 +3,7 @@ public class Main {
         try {
             new Node(15000);
 
-            for (int i = 0; i < 100; i++) {
+            for (int i = 0; i < 42; i++) {
                 Thread.sleep(100);
                 new Node(15001 + i, 15000);
             }
