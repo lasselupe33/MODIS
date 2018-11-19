@@ -115,6 +115,12 @@ public class Utils {
      * NB: If two indicies are equally close, then the lower index will be returned
      */
     public static int getNearestIndexWithNode(ArrayList<SimpleNode> array, int i) {
+        int index = Math.min(array.size() - 1, i);
+
+        if (array.get(index) != null) {
+            return index;
+        }
+
         // Store the highest and lowest index we've visited so far
         int minIndex = array.size() - 1;
         int maxIndex = 0;
@@ -131,10 +137,10 @@ public class Utils {
             // If there's still a lower index and we're currently visiting lower indexes, or if we've reached maxIndex,
             // then check a lower index
             if (maxIndex == array.size() - 1 || (checkLower && minIndex != 0)) {
-                currTestIndex = Math.max(0, i - 1 - (j / 2));
+                currTestIndex = Math.max(0, index - 1 - (j / 2));
             } else {
                 // ... else check a higher index than base
-                currTestIndex = Math.min(array.size(), i + 1 + (j / 2));
+                currTestIndex = Math.min(array.size() - 1, index + 1 + (j / 2));
             }
 
             // If we reach a testIndex that has a node, return the found index!

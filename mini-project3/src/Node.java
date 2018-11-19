@@ -193,14 +193,6 @@ public class Node {
                         SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
                     }
-                    else if (receivedObj instanceof SetBackUpNodeMsg) {
-                        SetBackUpNodeMsg msg = (SetBackUpNodeMsg) receivedObj;
-
-                        // If the list of references is below minimum requirements, then add as backup
-                        if (levelBelowList.size() < 2) {
-                            levelBelowList.add(msg.backupNode);
-                        }
-                    }
                     else if (receivedObj instanceof UpdateCurrentPositionMsg)
                     {
                         UpdateCurrentPositionMsg msg = (UpdateCurrentPositionMsg) receivedObj;
@@ -311,9 +303,6 @@ public class Node {
         return new Thread(() -> {
             while (alive) {
                 try {
-                    // Send heartbeat every 5 seconds
-                    Thread.sleep(2000);
-
                     // Bail out if routingTable hasn't been properly initialized yet
                     if (getIndexOfSelf() == -1) {
                         continue;
@@ -338,6 +327,9 @@ public class Node {
                             onNodeDied(levelBelowLocation);
                         }
                     }
+
+                    // Send heartbeat every 2 seconds
+                    Thread.sleep(2000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
@@ -382,9 +374,6 @@ public class Node {
 
             // Update newly inserted node's routingTable to match current routingTable
             sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations, null, null), newNodeMsg.node);
-
-            // Send self to level above as backup reference
-            sendMessage(new SetBackUpNodeMsg(self), newNodeMsg.node);
 
             // Request resources from neighbour
             requestResourcesFromNeighbour(newIndex);
@@ -523,14 +512,13 @@ public class Node {
         int index = msgLocation.get(prevLocations.size());
 
         // Now, based on the hash, get the node in the current routing table we should be at
-        SimpleNode targetNode = routingTable.get(index);
+        SimpleNode targetNode = routingTable.size() > index ? routingTable.get(index) : null;
 
         if (targetNode == null) {
             // if our target doesn't exist, send and insert/get the resource at the nearest node
             sendResourceRequestToNearestNode(msg, index);
             return false;
         }
-
 
         return traverse(msg, targetNode, false);
     }

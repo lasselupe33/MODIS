@@ -22,7 +22,7 @@ public class PutClient {
 
                 // Create new Put Message
                 PutMsg msg = new PutMsg(key, value);
-                //Utils.keyValueDebugInfo(key, value);
+                Utils.keyValueDebugInfo(key, value);
 
                 // Send message to node at given port and ip
                 Socket socket = new Socket(ip, port);
