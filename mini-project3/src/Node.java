@@ -186,12 +186,20 @@ public class Node {
                     {
                         SetNewSubNodeInformationMsg msg = (SetNewSubNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
-                        levelAboveList.add(msg.levelAbove);
+                        levelAboveList = msg.levelAbove;
                     }
                     else if (receivedObj instanceof SetNewNodeInformationMsg)
                     {
                         SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
+                    }
+                    else if (receivedObj instanceof SetBackUpNodeMsg) {
+                        SetBackUpNodeMsg msg = (SetBackUpNodeMsg) receivedObj;
+
+                        // If the list of references is below minimum requirements, then add as backup
+                        if (levelBelowList.size() < 2) {
+                            levelBelowList.add(msg.backupNode);
+                        }
                     }
                     else if (receivedObj instanceof UpdateCurrentPositionMsg)
                     {
@@ -303,8 +311,13 @@ public class Node {
         return new Thread(() -> {
             while (alive) {
                 try {
-                    // Send heartbeat every 10 seconds
-                    Thread.sleep(10000);
+                    // Send heartbeat every 5 seconds
+                    Thread.sleep(2000);
+
+                    // Bail out if routingTable hasn't been properly initialized yet
+                    if (getIndexOfSelf() == -1) {
+                        continue;
+                    }
 
                     int neighbourIndex = (getIndexOfSelf() + 1) % routingTable.size();
                     SimpleNode neighbour = routingTable.get(neighbourIndex);
@@ -368,7 +381,10 @@ public class Node {
             broadcast(msg);
 
             // Update newly inserted node's routingTable to match current routingTable
-            sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations, null), newNodeMsg.node);
+            sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations, null, null), newNodeMsg.node);
+
+            // Send self to level above as backup reference
+            sendMessage(new SetBackUpNodeMsg(self), newNodeMsg.node);
 
             // Request resources from neighbour
             requestResourcesFromNeighbour(newIndex);
@@ -394,10 +410,15 @@ public class Node {
         if (levelBelowList.size() == 0) {
             levelBelowList.add(subNode);
 
+            // Creating a list of references to the level above
+            ArrayList<SimpleNode> levelAbove = new ArrayList<>();
+            levelAbove.add(self);
+            levelAbove.add(routingTable.get(Utils.getNearestIndexWithNode(routingTable, getIndexOfSelf())));
+
             // Update newly inserted node's routingTable to match current routingTable
             ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
             subNodeRoutingTable.add(subNode);
-            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), null, self), subNode);
+            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), null, levelAbove, null), subNode);
 
             // The sub node's resources is set to the resources currently stored at this node
             // This node no longer has to store these resources but it has to store a backup of the resources at the sub node
@@ -484,6 +505,14 @@ public class Node {
     private void setNodeInformation(SetNewNodeInformationMsg msg) {
         this.routingTable = msg.routingTable;
         this.prevLocations = msg.prevNodeLocation;
+
+        if (msg.resources != null) {
+            this.resources = msg.resources;
+        }
+
+        if (msg.levelBelow != null) {
+            this.levelBelowList.add(msg.levelBelow);
+        }
     }
 
     /** Internal helper that'll traverse downwards in direction of the key specified in the msg */
@@ -512,24 +541,43 @@ public class Node {
     }
 
     private void traverseToDeadNode(TraverseToDeadNode msg) {
-        int indexAtCurrentRoutingTable = msg.location.get(msg.level);
+        int desiredIndexAtCurrentRoutingTable = msg.location.get(msg.level);
 
         if (msg.level == msg.location.size() - 2 && msg.location.get(msg.location.size() - 1) == 0) {
             // We found the node that stores the information for the subnode.
-            levelBelowList.remove(0);
+            levelBelowList.set(0, msg.newNode);
+            ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
+            subNodeRoutingTable.add(msg.newNode);
 
-        } else if (msg.level == msg.location.size() - 1) {
-            // we've reached the level where the dead node resides... Therefore we wish to find its neighbour
+            // Creating a list of references to the level above
+            ArrayList<SimpleNode> levelAbove = new ArrayList<>();
+            levelAbove.add(self);
+            levelAbove.add(routingTable.get(Utils.getNearestIndexWithNode(routingTable, getIndexOfSelf())));
+
+            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), null, levelAbove, backupResources), msg.newNode);
+        } else if (msg.level == msg.location.size() - 1 && (desiredIndexAtCurrentRoutingTable - 1) == getIndexOfSelf()) {
+            // we've found the neighbour to the dead node, restore it!
             SimpleNode newLevelBelow = levelBelowList.size() == 2 ? levelBelowList.get(1) : null;
 
-            sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations, newLevelBelow), routingTable.get(indexAtCurrentRoutingTable - 1));
+            routingTable.set(desiredIndexAtCurrentRoutingTable, msg.newNode);
+            broadcast(new UpdateRoutingTableMsg(desiredIndexAtCurrentRoutingTable, msg.newNode));
+
+            sendMessage(
+                new SetNewNodeInformationMsg(
+                    routingTable,
+                    prevLocations,
+                    newLevelBelow,
+                    backupResources
+                ),
+                routingTable.get(desiredIndexAtCurrentRoutingTable - 1)
+            );
         } else {
-            int nextLevel = getIndexOfSelf() == indexAtCurrentRoutingTable ? msg.level + 1 : msg.level;
+            int nextLevel = getIndexOfSelf() == desiredIndexAtCurrentRoutingTable ? msg.level + 1 : msg.level;
 
             // Continue traverse to dead node
             traverse(
                     new TraverseToDeadNode(msg.newNode, msg.location, nextLevel),
-                    routingTable.get(indexAtCurrentRoutingTable),
+                    routingTable.get(desiredIndexAtCurrentRoutingTable - 1),
                     false
             );
         }
@@ -645,7 +693,7 @@ public class Node {
             sendMessageUnsafe(msg, node);
         } catch (IOException e) {
             System.out.println("Node " + self.ip + ":" + self.port + " failed to connect to node at " + node.ip + ":" + node.port);
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 

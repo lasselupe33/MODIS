@@ -5,12 +5,19 @@ import Models.SimpleNode;
 
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class SetNewSubNodeInformationMsg extends SetNewNodeInformationMsg implements Serializable {
-    public SimpleNode levelAbove;
+    public ArrayList<SimpleNode> levelAbove;
 
-    public SetNewSubNodeInformationMsg(ArrayList<SimpleNode> table, ArrayList<Integer> prevNodeLocation, SimpleNode levelBelow, SimpleNode levelAbove){
-        super(table, prevNodeLocation, levelBelow);
+    public SetNewSubNodeInformationMsg(
+            ArrayList<SimpleNode> table,
+            ArrayList<Integer> prevNodeLocation,
+            SimpleNode levelBelow,
+            ArrayList<SimpleNode> levelAbove,
+            HashMap<Integer, String> resources
+    ){
+        super(table, prevNodeLocation, levelBelow, resources);
         this.levelAbove = levelAbove;
     }
 
