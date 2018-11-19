@@ -16,6 +16,9 @@ public class Node {
     // Contains a collection of all resources that the current node contains
     private HashMap<Integer, String> resources = new HashMap<>();
 
+    // Contains a backup of the resources stored at sub node or right neighbour
+    private HashMap<Integer, String> backupResources = new HashMap();
+
     // Contains a routingTable that contains all other nodes in the current layer
     private ArrayList<SimpleNode> routingTable = new ArrayList<>();
 
@@ -28,6 +31,9 @@ public class Node {
 
     // Contains a reference to a single node existing in the level below
     private SimpleNode levelBelow;
+
+    // Contains a reference to a single node existing in the level above
+    private SimpleNode levelAbove;
 
     // Contains a reference to the socket that a get value should be returned to, if any exists.
     private Socket getReturnSocket;
@@ -136,7 +142,22 @@ public class Node {
                     } else if (receivedObj instanceof UpdateResourcesMsg) {
                         UpdateResourcesMsg msg = (UpdateResourcesMsg) receivedObj;
                         resources = msg.resources;
+<<<<<<< HEAD
                     } else if (receivedObj instanceof NewSubNodeMsg) {
+=======
+
+                        // Send backup of resources to left neighbour or node above
+                        sendBackupResources();
+
+                    }
+                    else if (receivedObj instanceof UpdateBackupResourcesMsg)
+                    {
+                        UpdateBackupResourcesMsg msg = (UpdateBackupResourcesMsg) receivedObj;
+                        backupResources = msg.backupResources;
+                    }
+                    else if (receivedObj instanceof NewSubNodeMsg)
+                    {
+>>>>>>> e21e658f68d02834011eb24d3a13abcedf365538
                         NewSubNodeMsg msg = (NewSubNodeMsg) receivedObj;
                         insertSubNode(msg.node);
                     }
@@ -148,7 +169,19 @@ public class Node {
                     } else if (receivedObj instanceof SetNewNodeInformationMsg) {
                         SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
+<<<<<<< HEAD
                     } else if (receivedObj instanceof UpdateCurrentPositionMsg) {
+=======
+                    }
+                    else if (receivedObj instanceof SetNewSubNodeInformationMsg)
+                    {
+                        SetNewSubNodeInformationMsg msg = (SetNewSubNodeInformationMsg) receivedObj;
+                        setNodeInformation(msg);
+                        levelAbove = msg.levelAbove;
+                    }
+                    else if (receivedObj instanceof UpdateCurrentPositionMsg)
+                    {
+>>>>>>> e21e658f68d02834011eb24d3a13abcedf365538
                         UpdateCurrentPositionMsg msg = (UpdateCurrentPositionMsg) receivedObj;
                         nextNodeIndex = msg.newPos;
                     }
@@ -204,6 +237,7 @@ public class Node {
         });
     }
 
+<<<<<<< HEAD
     /**
      * Thread that'll continuously run and check whether or not or not its subNode and neighbor is alive, in order to
      * find out when nodes die, and should be replaced.
@@ -233,6 +267,21 @@ public class Node {
                 }
             }
         });
+=======
+    private void sendBackupResources() {
+        UpdateBackupResourcesMsg updateBackupResourcesMsg = new UpdateBackupResourcesMsg(resources);
+
+        int index = getIndexOfSelf();
+
+        if (index == 0){
+            if (levelAbove != null){
+                sendMessage(updateBackupResourcesMsg, levelAbove);
+            }
+        } else {
+            SimpleNode neighbourNode = routingTable.get(index-1);
+            sendMessage(updateBackupResourcesMsg, neighbourNode);
+        }
+>>>>>>> e21e658f68d02834011eb24d3a13abcedf365538
     }
 
     /** Internal helper to be called while inserting a new node to the network */
@@ -305,9 +354,13 @@ public class Node {
         }
 
         // Send updated resources map back to neighbour
-        UpdateResourcesMsg msg = new UpdateResourcesMsg(resourcesFromNeighbour);
+        UpdateResourcesMsg updateResourcesMsg = new UpdateResourcesMsg(resourcesFromNeighbour);
         SimpleNode neighbourNode = routingTable.get(neighbourIndex);
-        sendMessage(msg, neighbourNode);
+        sendMessage(updateResourcesMsg, neighbourNode);
+
+        // Send backup of resources to left neighbour
+        UpdateBackupResourcesMsg updateBackupResourcesMsg = new UpdateBackupResourcesMsg(resources);
+        sendMessage(updateBackupResourcesMsg, neighbourNode);
     }
 
     /** Internal helper to be called once a node that is currently being inserted should traverse down to the next level */
@@ -319,10 +372,11 @@ public class Node {
             // Update newly inserted node's routingTable to match current routingTable
             ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
             subNodeRoutingTable.add(subNode);
-            sendMessage(new SetNewNodeInformationMsg(subNodeRoutingTable, getLocation()), subNode);
+            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), self), subNode);
 
             // Send resources to subNode and clear own resource table
             sendMessage(new SendResourcesMsg(resources, true), subNode);
+            backupResources = resources;
             resources.clear();
 
         } else {
@@ -416,6 +470,9 @@ public class Node {
         } else {
             resources.put(msg.key, msg.value);
         }
+
+        // Send backup of resources to left neighbour or node above
+        sendBackupResources();
 
         System.out.println();
     }
