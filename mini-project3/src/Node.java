@@ -237,7 +237,9 @@ public class Node {
         int index = getIndexOfSelf();
 
         if (index == 0){
-            sendMessage(updateBackupResourcesMsg, levelAbove);
+            if (levelAbove != null){
+                sendMessage(updateBackupResourcesMsg, levelAbove);
+            }
         } else {
             SimpleNode neighbourNode = routingTable.get(index-1);
             sendMessage(updateBackupResourcesMsg, neighbourNode);
