@@ -210,9 +210,9 @@ public class Node {
                         TraverseGetMsg msg = ((GetResourceInNearestIndexMsg) receivedObj).getMsg;
                         getResource(msg);
                     }
-                    else if (receivedObj instanceof InsertDeadNode)
+                    else if (receivedObj instanceof TraverseToDeadNode)
                     {
-                        InsertDeadNode msg = (InsertDeadNode) receivedObj;
+                        TraverseToDeadNode msg = (TraverseToDeadNode) receivedObj;
                         traverseToDeadNode(msg);
                     }
                     else if (receivedObj instanceof DeadNodeMsg)
@@ -351,7 +351,7 @@ public class Node {
     private void insertNode(NewNodeMsg newNodeMsg) {
         // Always insert deadNodes before inserting normally
         if (deadNodes.size() != 0) {
-            traverseToDeadNode(new InsertDeadNode(newNodeMsg.node, deadNodes.remove(), 0));
+            traverseToDeadNode(new TraverseToDeadNode(newNodeMsg.node, deadNodes.remove(), 0));
 
             return;
         }
@@ -368,7 +368,7 @@ public class Node {
             broadcast(msg);
 
             // Update newly inserted node's routingTable to match current routingTable
-            sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations), newNodeMsg.node);
+            sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations, null), newNodeMsg.node);
 
             // Request resources from neighbour
             requestResourcesFromNeighbour(newIndex);
@@ -397,7 +397,7 @@ public class Node {
             // Update newly inserted node's routingTable to match current routingTable
             ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
             subNodeRoutingTable.add(subNode);
-            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), self), subNode);
+            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), null, self), subNode);
 
             // The sub node's resources is set to the resources currently stored at this node
             // This node no longer has to store these resources but it has to store a backup of the resources at the sub node
@@ -511,21 +511,24 @@ public class Node {
         return traverse(msg, routingTable.get(0), true);
     }
 
-    private void traverseToDeadNode(InsertDeadNode msg) {
+    private void traverseToDeadNode(TraverseToDeadNode msg) {
         int indexAtCurrentRoutingTable = msg.location.get(msg.level);
 
         if (msg.level == msg.location.size() - 2 && msg.location.get(msg.location.size() - 1) == 0) {
             // We found the node that stores the information for the subnode.
+            levelBelowList.remove(0);
 
         } else if (msg.level == msg.location.size() - 1) {
             // we've reached the level where the dead node resides... Therefore we wish to find its neighbour
-            sendMessage(..., routingTable.get(indexAtCurrentRoutingTable - 1));
+            SimpleNode newLevelBelow = levelBelowList.size() == 2 ? levelBelowList.get(1) : null;
+
+            sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations, newLevelBelow), routingTable.get(indexAtCurrentRoutingTable - 1));
         } else {
             int nextLevel = getIndexOfSelf() == indexAtCurrentRoutingTable ? msg.level + 1 : msg.level;
 
             // Continue traverse to dead node
             traverse(
-                    new InsertDeadNode(msg.newNode, msg.location, nextLevel),
+                    new TraverseToDeadNode(msg.newNode, msg.location, nextLevel),
                     routingTable.get(indexAtCurrentRoutingTable),
                     false
             );
