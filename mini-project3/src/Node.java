@@ -2,14 +2,14 @@ import Messages.*;
 import Models.SimpleNode;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Node {
+    // If ever set to false, then the node process should stop. (Used to debug resilliency)
+    private boolean alive;
+
     // Contain basic information about self, in order to be able to filter self out of own routingTable
     private SimpleNode self;
 
@@ -60,14 +60,22 @@ public class Node {
         }
     }
 
+    /** When called the node process will end itself */
+    public void dispose() {
+        this.alive = false;
+    }
+
     /** Internal helper that sets up core functionality of a node */
     private void setupNode(int port) {
         try {
+            this.alive = true;
+
             // Store information about self
             self = new SimpleNode(InetAddress.getLocalHost(), port);
 
             // Begin listening to incoming connections at specified port
             listen(port).start();
+            heartbeat().start();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -92,28 +100,31 @@ public class Node {
             try {
                 ServerSocket inSocket = new ServerSocket(port);
 
-                while (true) {
+                while (alive) {
                     // Setup socket and accept incoming messages
-                    Socket connectionSocket = inSocket.accept();
-                    ObjectInputStream input = new ObjectInputStream(connectionSocket.getInputStream());
+                    Socket connectionSocket;
+                    ObjectInputStream input;
+
+                    try {
+                        connectionSocket = inSocket.accept();
+                        input = new ObjectInputStream(connectionSocket.getInputStream());
+                    } catch (EOFException e) {
+                        continue;
+                    }
+
                     Object receivedObj = input.readObject();
 
                     // MESSAGES RELATED TO INSERTING NODES
-                    if (receivedObj instanceof NewNodeMsg)
-                    {
+                    if (receivedObj instanceof NewNodeMsg) {
                         NewNodeMsg msg = (NewNodeMsg) receivedObj;
                         insertNode(msg);
-                    }
-                    else if (receivedObj instanceof RequestResourcesMsg)
-                    {
+                    } else if (receivedObj instanceof RequestResourcesMsg) {
                         RequestResourcesMsg requestMsg = (RequestResourcesMsg) receivedObj;
 
                         SendResourcesMsg sendMsg = new SendResourcesMsg(resources, false);
 
                         sendMessage(sendMsg, requestMsg.requestingNode);
-                    }
-                    else if (receivedObj instanceof SendResourcesMsg)
-                    {
+                    } else if (receivedObj instanceof SendResourcesMsg) {
                         SendResourcesMsg msg = (SendResourcesMsg) receivedObj;
 
                         // If the new node is a subNode, then simply move all resources from parent
@@ -122,53 +133,37 @@ public class Node {
                         } else {
                             distributeResourcesWithNeighbour(msg.resources);
                         }
-                    }
-                    else if (receivedObj instanceof UpdateResourcesMsg)
-                    {
+                    } else if (receivedObj instanceof UpdateResourcesMsg) {
                         UpdateResourcesMsg msg = (UpdateResourcesMsg) receivedObj;
                         resources = msg.resources;
-                    }
-                    else if (receivedObj instanceof NewSubNodeMsg)
-                    {
+                    } else if (receivedObj instanceof NewSubNodeMsg) {
                         NewSubNodeMsg msg = (NewSubNodeMsg) receivedObj;
                         insertSubNode(msg.node);
                     }
 
                     // MESSAGES RELATED TO UPDATING INTERNAL NODE DATA
-                    else if (receivedObj instanceof UpdateRoutingTableMsg)
-                    {
+                    else if (receivedObj instanceof UpdateRoutingTableMsg) {
                         UpdateRoutingTableMsg msg = (UpdateRoutingTableMsg) receivedObj;
                         updateRoutingTable(msg.index, msg.value);
-                    }
-                    else if (receivedObj instanceof SetNewNodeInformationMsg)
-                    {
+                    } else if (receivedObj instanceof SetNewNodeInformationMsg) {
                         SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
-                    }
-                    else if (receivedObj instanceof UpdateCurrentPositionMsg)
-                    {
+                    } else if (receivedObj instanceof UpdateCurrentPositionMsg) {
                         UpdateCurrentPositionMsg msg = (UpdateCurrentPositionMsg) receivedObj;
                         nextNodeIndex = msg.newPos;
                     }
 
                     // MESSAGES RELATED TO PUT/GET
-                    else if (receivedObj instanceof InsertResourceInNearestIndexMsg)
-                    {
+                    else if (receivedObj instanceof InsertResourceInNearestIndexMsg) {
                         PutMsg msg = ((InsertResourceInNearestIndexMsg) receivedObj).putMsg;
                         insertResource(msg);
-                    }
-                    else if (receivedObj instanceof GetResourceInNearestIndexMsg)
-                    {
+                    } else if (receivedObj instanceof GetResourceInNearestIndexMsg) {
                         TraverseGetMsg msg = ((GetResourceInNearestIndexMsg) receivedObj).getMsg;
                         getResource(msg);
-                    }
-                    else if (receivedObj instanceof TraverseGetMsg)
-                    {
+                    } else if (receivedObj instanceof TraverseGetMsg) {
                         TraverseGetMsg msg = (TraverseGetMsg) receivedObj;
                         traverse(msg);
-                    }
-                    else if (receivedObj instanceof ReturnMsg)
-                    {
+                    } else if (receivedObj instanceof ReturnMsg) {
                         // When this message is received, that means a subnode has fetched a resource that this node
                         // shall propagate to its stored return socket that issued the request
                         ReturnMsg msg = (ReturnMsg) receivedObj;
@@ -182,13 +177,10 @@ public class Node {
 
                         getReturnSocket.close();
                         getReturnSocket = null;
-                    }
-                    else if (receivedObj instanceof PutMsg)
-                    {
+                    } else if (receivedObj instanceof PutMsg) {
                         PutMsg msg = (PutMsg) receivedObj;
                         traverse(msg);
-                    }
-                    else if (receivedObj instanceof GetMsg) {
+                    } else if (receivedObj instanceof GetMsg) {
                         GetMsg msg = (GetMsg) receivedObj;
 
                         // Begin traversing
@@ -201,11 +193,44 @@ public class Node {
 
                     connectionSocket.close();
                 }
+
+                inSocket.close();
             } catch (IOException e) {
                 System.out.println("Failed to bind node to " + self.ip + ":" + self.port);
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();
+            }
+        });
+    }
+
+    /**
+     * Thread that'll continuously run and check whether or not or not its subNode and neighbor is alive, in order to
+     * find out when nodes die, and should be replaced.
+     */
+    private Thread heartbeat() {
+        return new Thread(() -> {
+            while(alive) {
+                try {
+                    // Send heartbeat every 10 seconds
+                    Thread.sleep(10000);
+
+                    SimpleNode neighbour = routingTable.get((getIndexOfSelf() + 1) % routingTable.size());
+
+                    if (neighbour != null) {
+                        if (!checkIfNodeIsAlive(neighbour)) {
+                            System.out.println("Neighbour died!");
+                        }
+                    }
+
+                    if (this.levelBelow != null) {
+                        if (!checkIfNodeIsAlive(this.levelBelow)) {
+                            System.out.println("Level below died!");
+                        }
+                    }
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
             }
         });
     }
@@ -431,6 +456,30 @@ public class Node {
 
             sendMessage(msg, n);
         }
+    }
+
+    /** Internal helper that, when called, will check if a specified node is alive */
+    private boolean checkIfNodeIsAlive(SimpleNode node) {
+        boolean isAlive = false;
+
+        SocketAddress socketAddress = new InetSocketAddress(node.ip, node.port);
+        Socket checkSocket = new Socket();
+
+        // We determine that a node has died if it hasn't responded within two seconds..
+        int timeout = 2000;
+
+
+        try {
+            checkSocket.connect(socketAddress, timeout);
+            checkSocket.close();
+
+            // If we get here, then the connection succeeded.
+            isAlive = true;
+        } catch (IOException e) {
+            isAlive = false;
+        }
+
+        return isAlive;
     }
 
     /** Internal helper that returns the location of the current node */
