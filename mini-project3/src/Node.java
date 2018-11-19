@@ -134,17 +134,8 @@ public class Node {
                         UpdateResourcesMsg msg = (UpdateResourcesMsg) receivedObj;
                         resources = msg.resources;
 
-                        // Send backup of resources to left neighbour
-                        UpdateBackupResourcesMsg updateBackupResourcesMsg = new UpdateBackupResourcesMsg(resources);
-
-                        int index = getIndexOfSelf();
-
-                        if (index == 0){
-                            sendMessage(updateBackupResourcesMsg, levelAbove);
-                        } else {
-                            SimpleNode neighbourNode = routingTable.get(index-1);
-                            sendMessage(updateBackupResourcesMsg, neighbourNode);
-                        }
+                        // Send backup of resources to left neighbour or node above
+                        sendBackupResources();
 
                     }
                     else if (receivedObj instanceof UpdateBackupResourcesMsg)
@@ -238,6 +229,19 @@ public class Node {
                 e.printStackTrace();
             }
         });
+    }
+
+    private void sendBackupResources() {
+        UpdateBackupResourcesMsg updateBackupResourcesMsg = new UpdateBackupResourcesMsg(resources);
+
+        int index = getIndexOfSelf();
+
+        if (index == 0){
+            sendMessage(updateBackupResourcesMsg, levelAbove);
+        } else {
+            SimpleNode neighbourNode = routingTable.get(index-1);
+            sendMessage(updateBackupResourcesMsg, neighbourNode);
+        }
     }
 
     /** Internal helper to be called while inserting a new node to the network */
@@ -426,6 +430,9 @@ public class Node {
         } else {
             resources.put(msg.key, msg.value);
         }
+
+        // Send backup of resources to left neighbour or node above
+        sendBackupResources();
 
         System.out.println();
     }
