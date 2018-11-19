@@ -6,8 +6,8 @@ public class Main {
             Thread.sleep(100);
             Node failingNode = new Node(40000, 30000);
 
-            for (int i = 0; i < 2; i++) {
-                Thread.sleep(1000);
+            for (int i = 0; i < 300; i++) {
+                Thread.sleep(10);
                 new Node(30005 + i, 30000);
             }
 

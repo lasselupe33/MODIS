@@ -3,7 +3,7 @@ package Messages.TraverseMessages;
 import java.io.Serializable;
 import java.net.InetAddress;
 
-public class GetMsg extends TransferMsg implements Serializable {
+public class GetMsg extends TraverseMsg implements Serializable {
     public int port;
     public InetAddress ip;
 

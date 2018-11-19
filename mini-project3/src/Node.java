@@ -15,6 +15,9 @@ public class Node {
     // Contain basic information about self, in order to be able to filter self out of own routingTable
     private SimpleNode self;
 
+    // Contains an arrayList with a location for each node that has been identified as dead in the network
+    private ArrayList<ArrayList<Integer>> deadNodes = new ArrayList<>();
+
     // Contains a collection of all resources that the current node contains
     private HashMap<Integer, String> resources = new HashMap<>();
 
@@ -189,7 +192,11 @@ public class Node {
                         getResource(msg);
                     } else if (receivedObj instanceof TraverseGetMsg) {
                         TraverseGetMsg msg = (TraverseGetMsg) receivedObj;
-                        traverse(msg);
+                        Boolean isDesiredNode = traverseResourceDown(msg);
+
+                        if (isDesiredNode) {
+                            handleResourceRequest(msg);
+                        }
                     } else if (receivedObj instanceof ReturnMsg) {
                         // When this message is received, that means a subnode has fetched a resource that this node
                         // shall propagate to its stored return socket that issued the request
@@ -206,12 +213,21 @@ public class Node {
                         getReturnSocket = null;
                     } else if (receivedObj instanceof PutMsg) {
                         PutMsg msg = (PutMsg) receivedObj;
-                        traverse(msg);
+                        Boolean isDesiredNode = traverseResourceDown(msg);
+
+                        if (isDesiredNode) {
+                            handleResourceRequest(msg);
+                        }
                     } else if (receivedObj instanceof GetMsg) {
                         GetMsg msg = (GetMsg) receivedObj;
 
                         // Begin traversing
-                        traverse(new TraverseGetMsg(msg.key, self));
+                        TraverseGetMsg traverseMsg = new TraverseGetMsg(msg.key, self);
+                        Boolean isDesiredNode = traverseResourceDown(traverseMsg);
+
+                        if (isDesiredNode) {
+                            handleResourceRequest(traverseMsg);
+                        }
 
                         // Store socket to getClient in order to be able to send back result
                         getReturnSocket = connectionSocket;
@@ -394,64 +410,80 @@ public class Node {
         this.prevLocations = msg.prevNodeLocation;
     }
 
-
-    /**
-     * Internal helper that figures out where to traverse to in the structured network based on the passed key in the msg
-     */
-    private void traverse(TransferMsg msg) {
+    /** Internal helper that'll traverse downwards in direction of the key specified in the msg */
+    private boolean traverseResourceDown(TraverseMsg msg) {
         // Figure out what index we desire to travel to in the current level based on the location of the hash
         String hashString = Utils.hashString("" + msg.key);
         ArrayList<Integer> msgLocation = Utils.convertHashToLocation(hashString);
         int index = msgLocation.get(prevLocations.size());
 
         // Now, based on the hash, get the node in the current routing table we should be at
-        SimpleNode nextNode = routingTable.get(index);
+        SimpleNode targetNode = routingTable.get(index);
 
-        if (nextNode == null) {
-            // ...check if node has been killed...
-                // Broadcast that node has been killed
-                // Use prev node to find a reference to the correct level below
+        if (targetNode == null) {
+            // if our target doesn't exist, send and insert/get the resource at the nearest node
+            sendResourceRequestToNearestNode(msg, index);
+            return false;
+        }
 
-            // if it doesn't exist, send and insert/get the resource at the nearest node
-            sendToNearestNode(msg, index);
-        } else if (nextNode.ip.equals(self.ip) && nextNode.port == self.port) {
+
+        return traverse(msg, targetNode);
+    }
+
+    /** Internal helper that'll attempt to traverse a message to the root */
+    private boolean traverseToRoot(TraverseMsg msg) {
+        return traverse(msg, routingTable.get(0));
+    }
+
+    /**
+     * Internal helper that figures out where to traverse to in the structured network based on the passed key in the msg
+     */
+    private boolean traverse(TraverseMsg msg, SimpleNode targetNode) {
+        if (targetNode.ip.equals(self.ip) && targetNode.port == self.port) {
             // ... else, if we already is the correct node, determine if we can go down further
             if (levelBelow == null) {
-                // ... if we can't, insert/get resource based on message
-                if (msg instanceof PutMsg)
-                {
-                    insertResource((PutMsg) msg);
-                }
-                else if (msg instanceof TraverseGetMsg)
-                {
-                    getResource((TraverseGetMsg) msg);
-                }
+                // ... if we can't, then we've reached our desired node
+                return true;
             } else {
                 // ... else, propagate the message down
                 sendMessage(msg, levelBelow);
+                return false;
             }
         } else {
             // ... else, go to the correct node in the current routing table
-            sendMessage(msg, nextNode);
+            sendMessage(msg, targetNode);
+            return false;
         }
     }
 
     /** Internal helper that send the resource to the node nearest given index **/
-    public void sendToNearestNode(TransferMsg transferMsg, int index) {
+    public void sendResourceRequestToNearestNode(TraverseMsg traverseMsg, int index) {
         int nearestIndex = Utils.getNearestIndexWithNode(routingTable, index);
         SimpleNode nearestNode = routingTable.get(nearestIndex);
 
-        if (transferMsg instanceof PutMsg)
+        if (traverseMsg instanceof PutMsg)
         {
-            PutMsg msg = (PutMsg) transferMsg;
+            PutMsg msg = (PutMsg) traverseMsg;
             InsertResourceInNearestIndexMsg insertMsg = new InsertResourceInNearestIndexMsg(msg);
             sendMessage(insertMsg, nearestNode);
         }
-        else if (transferMsg instanceof TraverseGetMsg)
+        else if (traverseMsg instanceof TraverseGetMsg)
         {
-            TraverseGetMsg msg = (TraverseGetMsg) transferMsg;
+            TraverseGetMsg msg = (TraverseGetMsg) traverseMsg;
             GetResourceInNearestIndexMsg getMsg = new GetResourceInNearestIndexMsg(msg);
             sendMessage(getMsg, nearestNode);
+        }
+    }
+
+    /** Simple helper that'll handle the resourceRequest once the proper node has been found */
+    private void handleResourceRequest(TraverseMsg msg) {
+        if (msg instanceof PutMsg)
+        {
+            insertResource((PutMsg) msg);
+        }
+        else if (msg instanceof TraverseGetMsg)
+        {
+            getResource((TraverseGetMsg) msg);
         }
     }
 
