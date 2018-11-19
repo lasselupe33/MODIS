@@ -1,15 +1,14 @@
 public class Main {
     public static void main(String[] args) {
         try {
-            new Node(25000);
+            new Node(15000);
 
-            for (int i = 0; i < 50; i++) {
+            for (int i = 0; i < 38; i++) {
                 Thread.sleep(100);
-                new Node(25001 + i, 25000);
-                System.out.println(i);
+                new Node(15001 + i, 15000);
             }
 
-            Node failingNode = new Node(40000, 25000);
+            Node failingNode = new Node(40000, 15000);
 
             new Thread(() -> {
                 try {
@@ -21,8 +20,8 @@ public class Main {
 
 
                     Thread.sleep(12000);
-                    System.out.println("Attempting to insert new node");
-                    new Node(50000, 25000);
+                    System.out.println("Attempting to insert new node (if no exceptions are thrown, then we assume success.)");
+                    new Node(50000, 15000);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }

@@ -573,11 +573,12 @@ public class Node {
             );
         } else {
             int nextLevel = getIndexOfSelf() == desiredIndexAtCurrentRoutingTable ? msg.level + 1 : msg.level;
+            int traverseIndex = msg.level == msg.location.size() - 1 ? desiredIndexAtCurrentRoutingTable - 1 : desiredIndexAtCurrentRoutingTable;
 
             // Continue traverse to dead node
             traverse(
                     new TraverseToDeadNode(msg.newNode, msg.location, nextLevel),
-                    routingTable.get(desiredIndexAtCurrentRoutingTable - 1),
+                    routingTable.get(traverseIndex),
                     false
             );
         }
