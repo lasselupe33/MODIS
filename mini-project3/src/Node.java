@@ -142,9 +142,6 @@ public class Node {
                     } else if (receivedObj instanceof UpdateResourcesMsg) {
                         UpdateResourcesMsg msg = (UpdateResourcesMsg) receivedObj;
                         resources = msg.resources;
-<<<<<<< HEAD
-                    } else if (receivedObj instanceof NewSubNodeMsg) {
-=======
 
                         // Send backup of resources to left neighbour or node above
                         sendBackupResources();
@@ -157,7 +154,6 @@ public class Node {
                     }
                     else if (receivedObj instanceof NewSubNodeMsg)
                     {
->>>>>>> e21e658f68d02834011eb24d3a13abcedf365538
                         NewSubNodeMsg msg = (NewSubNodeMsg) receivedObj;
                         insertSubNode(msg.node);
                     }
@@ -169,9 +165,6 @@ public class Node {
                     } else if (receivedObj instanceof SetNewNodeInformationMsg) {
                         SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
-<<<<<<< HEAD
-                    } else if (receivedObj instanceof UpdateCurrentPositionMsg) {
-=======
                     }
                     else if (receivedObj instanceof SetNewSubNodeInformationMsg)
                     {
@@ -181,7 +174,6 @@ public class Node {
                     }
                     else if (receivedObj instanceof UpdateCurrentPositionMsg)
                     {
->>>>>>> e21e658f68d02834011eb24d3a13abcedf365538
                         UpdateCurrentPositionMsg msg = (UpdateCurrentPositionMsg) receivedObj;
                         nextNodeIndex = msg.newPos;
                     }
@@ -237,14 +229,13 @@ public class Node {
         });
     }
 
-<<<<<<< HEAD
     /**
      * Thread that'll continuously run and check whether or not or not its subNode and neighbor is alive, in order to
      * find out when nodes die, and should be replaced.
      */
     private Thread heartbeat() {
         return new Thread(() -> {
-            while(alive) {
+            while (alive) {
                 try {
                     // Send heartbeat every 10 seconds
                     Thread.sleep(10000);
@@ -267,21 +258,6 @@ public class Node {
                 }
             }
         });
-=======
-    private void sendBackupResources() {
-        UpdateBackupResourcesMsg updateBackupResourcesMsg = new UpdateBackupResourcesMsg(resources);
-
-        int index = getIndexOfSelf();
-
-        if (index == 0){
-            if (levelAbove != null){
-                sendMessage(updateBackupResourcesMsg, levelAbove);
-            }
-        } else {
-            SimpleNode neighbourNode = routingTable.get(index-1);
-            sendMessage(updateBackupResourcesMsg, neighbourNode);
-        }
->>>>>>> e21e658f68d02834011eb24d3a13abcedf365538
     }
 
     /** Internal helper to be called while inserting a new node to the network */
@@ -318,7 +294,29 @@ public class Node {
         }
     }
 
-    /** Internal helper that requests recources from the nodes left neighbour*/
+    /** Internal helper to be called once a node that is currently being inserted should traverse down to the next level */
+    private void insertSubNode(SimpleNode subNode) {
+        // If there doesn't exist a level below the specified node, create it now
+        if (this.levelBelow == null) {
+            this.levelBelow = subNode;
+
+            // Update newly inserted node's routingTable to match current routingTable
+            ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
+            subNodeRoutingTable.add(subNode);
+            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), self), subNode);
+
+            // Send resources to subNode and clear own resource table
+            sendMessage(new SendResourcesMsg(resources, true), subNode);
+            backupResources = resources;
+            resources.clear();
+
+        } else {
+            // ... else propagate newNode message down to the next level
+            sendMessage(new NewNodeMsg(subNode, getLocation()), levelBelow);
+        }
+    }
+
+    /** Internal helper that requests resources from the nodes left neighbour*/
     private void requestResourcesFromNeighbour(int index) {
         SimpleNode leftNeighbour = routingTable.get(index - 1);
 
@@ -363,25 +361,18 @@ public class Node {
         sendMessage(updateBackupResourcesMsg, neighbourNode);
     }
 
-    /** Internal helper to be called once a node that is currently being inserted should traverse down to the next level */
-    private void insertSubNode(SimpleNode subNode) {
-        // If there doesn't exist a level below the specified node, create it now
-        if (this.levelBelow == null) {
-            this.levelBelow = subNode;
+    private void sendBackupResources() {
+        UpdateBackupResourcesMsg updateBackupResourcesMsg = new UpdateBackupResourcesMsg(resources);
 
-            // Update newly inserted node's routingTable to match current routingTable
-            ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
-            subNodeRoutingTable.add(subNode);
-            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), self), subNode);
+        int index = getIndexOfSelf();
 
-            // Send resources to subNode and clear own resource table
-            sendMessage(new SendResourcesMsg(resources, true), subNode);
-            backupResources = resources;
-            resources.clear();
-
+        if (index == 0){
+            if (levelAbove != null){
+                sendMessage(updateBackupResourcesMsg, levelAbove);
+            }
         } else {
-            // ... else propagate newNode message down to the next level
-            sendMessage(new NewNodeMsg(subNode, getLocation()), levelBelow);
+            SimpleNode neighbourNode = routingTable.get(index-1);
+            sendMessage(updateBackupResourcesMsg, neighbourNode);
         }
     }
 
@@ -517,7 +508,7 @@ public class Node {
 
     /** Internal helper that, when called, will check if a specified node is alive */
     private boolean checkIfNodeIsAlive(SimpleNode node) {
-        boolean isAlive = false;
+        boolean isAlive;
 
         SocketAddress socketAddress = new InetSocketAddress(node.ip, node.port);
         Socket checkSocket = new Socket();
