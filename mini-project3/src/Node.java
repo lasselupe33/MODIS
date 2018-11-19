@@ -186,12 +186,20 @@ public class Node {
                     {
                         SetNewSubNodeInformationMsg msg = (SetNewSubNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
-                        levelAboveList.add(msg.levelAbove);
+                        levelAboveList = msg.levelAbove;
                     }
                     else if (receivedObj instanceof SetNewNodeInformationMsg)
                     {
                         SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
                         setNodeInformation(msg);
+                    }
+                    else if (receivedObj instanceof SetBackUpNodeMsg) {
+                        SetBackUpNodeMsg msg = (SetBackUpNodeMsg) receivedObj;
+
+                        // If the list of references is below minimum requirements, then add as backup
+                        if (levelBelowList.size() < 2) {
+                            levelBelowList.add(msg.backupNode);
+                        }
                     }
                     else if (receivedObj instanceof UpdateCurrentPositionMsg)
                     {
@@ -370,6 +378,9 @@ public class Node {
             // Update newly inserted node's routingTable to match current routingTable
             sendMessage(new SetNewNodeInformationMsg(routingTable, prevLocations), newNodeMsg.node);
 
+            // Send self to level above as backup reference
+            sendMessage(new SetBackUpNodeMsg(self), newNodeMsg.node);
+
             // Request resources from neighbour
             requestResourcesFromNeighbour(newIndex);
         } else {
@@ -394,10 +405,15 @@ public class Node {
         if (levelBelowList.size() == 0) {
             levelBelowList.add(subNode);
 
+            // Creating a list of references to the level above
+            ArrayList<SimpleNode> levelAbove = new ArrayList<>();
+            levelAbove.add(self);
+            levelAbove.add(routingTable.get(Utils.getNearestIndexWithNode(routingTable, getIndexOfSelf())));
+
             // Update newly inserted node's routingTable to match current routingTable
             ArrayList<SimpleNode> subNodeRoutingTable = new ArrayList<>();
             subNodeRoutingTable.add(subNode);
-            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), self), subNode);
+            sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), levelAbove), subNode);
 
             // The sub node's resources is set to the resources currently stored at this node
             // This node no longer has to store these resources but it has to store a backup of the resources at the sub node
