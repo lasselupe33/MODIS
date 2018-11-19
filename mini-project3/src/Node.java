@@ -210,18 +210,25 @@ public class Node {
                         TraverseGetMsg msg = ((GetResourceInNearestIndexMsg) receivedObj).getMsg;
                         getResource(msg);
                     }
+                    else if (receivedObj instanceof InsertDeadNode)
+                    {
+                        InsertDeadNode msg = (InsertDeadNode) receivedObj;
+                        traverseToDeadNode(msg);
+                    }
                     else if (receivedObj instanceof DeadNodeMsg)
                     {
                         DeadNodeMsg msg = (DeadNodeMsg) receivedObj;
                         boolean isRootNode = traverseToRoot(msg);
 
                         if (isRootNode) {
-                            broadcast(new UpdateDeadNodesMsg(msg.location));
-                            this.deadNodes.add(msg.location);
+                            if (!this.deadNodes.contains(msg.location)) {
+                                broadcast(new UpdateDeadNodesMsg(msg.location));
+                                this.deadNodes.add(msg.location);
 
-                            System.out.println();
-                            System.out.println("Recognized dead node at");
-                            System.out.println(msg.location);
+                                System.out.println();
+                                System.out.println("Recognized dead node at");
+                                System.out.println(msg.location);
+                            }
                         }
                     }
                     else if (receivedObj instanceof TraverseGetMsg)
@@ -342,6 +349,13 @@ public class Node {
 
     /** Internal helper to be called while inserting a new node to the network */
     private void insertNode(NewNodeMsg newNodeMsg) {
+        // Always insert deadNodes before inserting normally
+        if (deadNodes.size() != 0) {
+            traverseToDeadNode(new InsertDeadNode(newNodeMsg.node, deadNodes.remove(), 0));
+
+            return;
+        }
+
         // If there's room for more in our table, insert here
         if (routingTable.size() < Utils.charMapping.size()) {
             routingTable.add(newNodeMsg.node);
@@ -495,6 +509,27 @@ public class Node {
     /** Internal helper that'll attempt to traverse a message to the root */
     private boolean traverseToRoot(TraverseMsg msg) {
         return traverse(msg, routingTable.get(0), true);
+    }
+
+    private void traverseToDeadNode(InsertDeadNode msg) {
+        int indexAtCurrentRoutingTable = msg.location.get(msg.level);
+
+        if (msg.level == msg.location.size() - 2 && msg.location.get(msg.location.size() - 1) == 0) {
+            // We found the node that stores the information for the subnode.
+
+        } else if (msg.level == msg.location.size() - 1) {
+            // we've reached the level where the dead node resides... Therefore we wish to find its neighbour
+            sendMessage(..., routingTable.get(indexAtCurrentRoutingTable - 1));
+        } else {
+            int nextLevel = getIndexOfSelf() == indexAtCurrentRoutingTable ? msg.level + 1 : msg.level;
+
+            // Continue traverse to dead node
+            traverse(
+                    new InsertDeadNode(msg.newNode, msg.location, nextLevel),
+                    routingTable.get(indexAtCurrentRoutingTable),
+                    false
+            );
+        }
     }
 
     /**
