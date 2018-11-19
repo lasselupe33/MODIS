@@ -1,4 +1,6 @@
-import Messages.*;
+import Messages.NodeInsertionMessages.*;
+import Messages.ResourceHandlingMessages.*;
+import Messages.TraverseMessages.*;
 import Models.SimpleNode;
 
 import java.io.*;
@@ -305,7 +307,9 @@ public class Node {
             subNodeRoutingTable.add(subNode);
             sendMessage(new SetNewSubNodeInformationMsg(subNodeRoutingTable, getLocation(), self), subNode);
 
-            // Send resources to subNode and clear own resource table
+            // The sub node's resources is set to the resources currently stored at this node
+            // This node no longer has to store these resources but it has to store a backup of the resources at the sub node
+            // Therefore it sets its backup resources to the resources it is currently storing and clears its own resource table
             sendMessage(new SendResourcesMsg(resources, true), subNode);
             backupResources = resources;
             resources.clear();

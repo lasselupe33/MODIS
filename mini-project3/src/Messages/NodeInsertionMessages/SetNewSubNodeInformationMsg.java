@@ -1,5 +1,6 @@
-package Messages;
+package Messages.NodeInsertionMessages;
 
+import Messages.NodeInsertionMessages.SetNewNodeInformationMsg;
 import Models.SimpleNode;
 
 import java.io.Serializable;

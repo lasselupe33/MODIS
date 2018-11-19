@@ -1,4 +1,4 @@
-package Messages;
+package Messages.NodeInsertionMessages;
 
 import Models.SimpleNode;
 

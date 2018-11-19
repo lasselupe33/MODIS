@@ -1,5 +1,5 @@
-import Messages.GetMsg;
-import Messages.PutMsg;
+import Messages.TraverseMessages.GetMsg;
+import Messages.TraverseMessages.PutMsg;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

@@ -1,4 +1,4 @@
-package Messages;
+package Messages.TraverseMessages;
 
 import java.io.Serializable;
 import java.net.InetAddress;

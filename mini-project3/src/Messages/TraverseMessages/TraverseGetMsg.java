@@ -1,4 +1,4 @@
-package Messages;
+package Messages.TraverseMessages;
 
 import Models.SimpleNode;
 

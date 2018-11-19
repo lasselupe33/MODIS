@@ -1,4 +1,4 @@
-package Messages;
+package Messages.ResourceHandlingMessages;
 
 import Models.SimpleNode;
 

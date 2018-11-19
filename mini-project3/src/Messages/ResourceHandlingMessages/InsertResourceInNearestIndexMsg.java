@@ -1,4 +1,6 @@
-package Messages;
+package Messages.ResourceHandlingMessages;
+
+import Messages.TraverseMessages.PutMsg;
 
 import java.io.Serializable;
 
