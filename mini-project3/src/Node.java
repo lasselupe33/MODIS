@@ -361,12 +361,16 @@ public class Node {
         sendMessage(updateBackupResourcesMsg, neighbourNode);
     }
 
+    /**
+     * Internal helper that sends a backup of its resources to its neighbour or parent node
+     */
     private void sendBackupResources() {
         UpdateBackupResourcesMsg updateBackupResourcesMsg = new UpdateBackupResourcesMsg(resources);
 
         int index = getIndexOfSelf();
 
         if (index == 0){
+            // If levelAbove is null we are at the first node inserted and there is no backup table to update
             if (levelAbove != null){
                 sendMessage(updateBackupResourcesMsg, levelAbove);
             }
