@@ -19,7 +19,7 @@ public class Main {
                     failingNode.dispose();
 
 
-                    Thread.sleep(12000);
+                    Thread.sleep(15000);
                     System.out.println("Attempting to insert new node (if no exceptions are thrown, then we assume success.)");
                     new Node(50000, 15000);
                 } catch (InterruptedException e) {
