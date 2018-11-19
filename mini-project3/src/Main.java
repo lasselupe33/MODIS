@@ -3,13 +3,12 @@ public class Main {
         try {
             new Node(30000);
 
-            Thread.sleep(100);
-            Node failingNode = new Node(40000, 30000);
-
-            for (int i = 0; i < 300; i++) {
-                Thread.sleep(10);
+            for (int i = 0; i < 150; i++) {
+                Thread.sleep(50);
                 new Node(30005 + i, 30000);
             }
+
+            Node failingNode = new Node(40000, 30000);
 
             System.out.println("Nodes ready");
 

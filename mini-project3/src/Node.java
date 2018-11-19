@@ -7,6 +7,7 @@ import java.io.*;
 import java.net.*;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
 
 public class Node {
     // If ever set to false, then the node process should stop. (Used to debug resilliency)
@@ -16,7 +17,7 @@ public class Node {
     private SimpleNode self;
 
     // Contains an arrayList with a location for each node that has been identified as dead in the network
-    private ArrayList<ArrayList<Integer>> deadNodes = new ArrayList<>();
+    private LinkedList<ArrayList<Integer>> deadNodes = new LinkedList<>();
 
     // Contains a collection of all resources that the current node contains
     private HashMap<Integer, String> resources = new HashMap<>();
@@ -126,16 +127,21 @@ public class Node {
                     Object receivedObj = input.readObject();
 
                     // MESSAGES RELATED TO INSERTING NODES
-                    if (receivedObj instanceof NewNodeMsg) {
+                    if (receivedObj instanceof NewNodeMsg)
+                    {
                         NewNodeMsg msg = (NewNodeMsg) receivedObj;
                         insertNode(msg);
-                    } else if (receivedObj instanceof RequestResourcesMsg) {
+                    }
+                    else if (receivedObj instanceof RequestResourcesMsg)
+                    {
                         RequestResourcesMsg requestMsg = (RequestResourcesMsg) receivedObj;
 
                         SendResourcesMsg sendMsg = new SendResourcesMsg(resources, false);
 
                         sendMessage(sendMsg, requestMsg.requestingNode);
-                    } else if (receivedObj instanceof SendResourcesMsg) {
+                    }
+                    else if (receivedObj instanceof SendResourcesMsg)
+                    {
                         SendResourcesMsg msg = (SendResourcesMsg) receivedObj;
 
                         // If the new node is a subNode, then simply move all resources from parent
@@ -144,7 +150,9 @@ public class Node {
                         } else {
                             distributeResourcesWithNeighbour(msg.resources);
                         }
-                    } else if (receivedObj instanceof UpdateResourcesMsg) {
+                    }
+                    else if (receivedObj instanceof UpdateResourcesMsg)
+                    {
                         UpdateResourcesMsg msg = (UpdateResourcesMsg) receivedObj;
                         resources = msg.resources;
 
@@ -162,14 +170,17 @@ public class Node {
                         NewSubNodeMsg msg = (NewSubNodeMsg) receivedObj;
                         insertSubNode(msg.node);
                     }
+                    else if (receivedObj instanceof UpdateDeadNodesMsg)
+                    {
+                        UpdateDeadNodesMsg msg = (UpdateDeadNodesMsg) receivedObj;
+                        this.deadNodes.add(msg.location);
+                    }
 
                     // MESSAGES RELATED TO UPDATING INTERNAL NODE DATA
-                    else if (receivedObj instanceof UpdateRoutingTableMsg) {
+                    else if (receivedObj instanceof UpdateRoutingTableMsg)
+                    {
                         UpdateRoutingTableMsg msg = (UpdateRoutingTableMsg) receivedObj;
                         updateRoutingTable(msg.index, msg.value);
-                    } else if (receivedObj instanceof SetNewNodeInformationMsg) {
-                        SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
-                        setNodeInformation(msg);
                     }
                     else if (receivedObj instanceof SetNewSubNodeInformationMsg)
                     {
@@ -177,27 +188,53 @@ public class Node {
                         setNodeInformation(msg);
                         levelAboveList.add(msg.levelAbove);
                     }
+                    else if (receivedObj instanceof SetNewNodeInformationMsg)
+                    {
+                        SetNewNodeInformationMsg msg = (SetNewNodeInformationMsg) receivedObj;
+                        setNodeInformation(msg);
+                    }
                     else if (receivedObj instanceof UpdateCurrentPositionMsg)
                     {
                         UpdateCurrentPositionMsg msg = (UpdateCurrentPositionMsg) receivedObj;
                         nextNodeIndex = msg.newPos;
                     }
 
-                    // MESSAGES RELATED TO PUT/GET
-                    else if (receivedObj instanceof InsertResourceInNearestIndexMsg) {
+                    // MESSAGES RELATED TO TRAVERSAL
+                    else if (receivedObj instanceof InsertResourceInNearestIndexMsg)
+                    {
                         PutMsg msg = ((InsertResourceInNearestIndexMsg) receivedObj).putMsg;
                         insertResource(msg);
-                    } else if (receivedObj instanceof GetResourceInNearestIndexMsg) {
+                    }
+                    else if (receivedObj instanceof GetResourceInNearestIndexMsg)
+                    {
                         TraverseGetMsg msg = ((GetResourceInNearestIndexMsg) receivedObj).getMsg;
                         getResource(msg);
-                    } else if (receivedObj instanceof TraverseGetMsg) {
+                    }
+                    else if (receivedObj instanceof DeadNodeMsg)
+                    {
+                        DeadNodeMsg msg = (DeadNodeMsg) receivedObj;
+                        boolean isRootNode = traverseToRoot(msg);
+
+                        if (isRootNode) {
+                            broadcast(new UpdateDeadNodesMsg(msg.location));
+                            this.deadNodes.add(msg.location);
+
+                            System.out.println();
+                            System.out.println("Recognized dead node at");
+                            System.out.println(msg.location);
+                        }
+                    }
+                    else if (receivedObj instanceof TraverseGetMsg)
+                    {
                         TraverseGetMsg msg = (TraverseGetMsg) receivedObj;
                         Boolean isDesiredNode = traverseResourceDown(msg);
 
                         if (isDesiredNode) {
                             handleResourceRequest(msg);
                         }
-                    } else if (receivedObj instanceof ReturnMsg) {
+                    }
+                    else if (receivedObj instanceof ReturnMsg)
+                    {
                         // When this message is received, that means a subnode has fetched a resource that this node
                         // shall propagate to its stored return socket that issued the request
                         ReturnMsg msg = (ReturnMsg) receivedObj;
@@ -211,14 +248,18 @@ public class Node {
 
                         getReturnSocket.close();
                         getReturnSocket = null;
-                    } else if (receivedObj instanceof PutMsg) {
+                    }
+                    else if (receivedObj instanceof PutMsg)
+                    {
                         PutMsg msg = (PutMsg) receivedObj;
                         Boolean isDesiredNode = traverseResourceDown(msg);
 
                         if (isDesiredNode) {
                             handleResourceRequest(msg);
                         }
-                    } else if (receivedObj instanceof GetMsg) {
+                    }
+                    else if (receivedObj instanceof GetMsg)
+                    {
                         GetMsg msg = (GetMsg) receivedObj;
 
                         // Begin traversing
@@ -258,17 +299,23 @@ public class Node {
                     // Send heartbeat every 10 seconds
                     Thread.sleep(10000);
 
-                    SimpleNode neighbour = routingTable.get((getIndexOfSelf() + 1) % routingTable.size());
+                    int neighbourIndex = (getIndexOfSelf() + 1) % routingTable.size();
+                    SimpleNode neighbour = routingTable.get(neighbourIndex);
 
                     if (neighbour != null) {
                         if (!checkIfNodeIsAlive(neighbour)) {
-                            System.out.println("Neighbour died!");
+                            // Get location to neighbour
+                            ArrayList<Integer> neighbourLocation = this.getLocation();
+                            neighbourLocation.set(neighbourLocation.size() - 1, neighbourIndex);
+                            onNodeDied(neighbourLocation);
                         }
                     }
 
                     if (levelBelowList.size() > 0) {
                         if (!checkIfNodeIsAlive(levelBelowList.get(0))) {
-                            System.out.println("Level below died!");
+                            ArrayList<Integer> levelBelowLocation = this.getLocation();
+                            levelBelowLocation.add(0);
+                            onNodeDied(levelBelowLocation);
                         }
                     }
                 } catch (InterruptedException e) {
@@ -276,6 +323,21 @@ public class Node {
                 }
             }
         });
+    }
+
+    /** Internal helper to be called once a node has been recognized as dead */
+    private void onNodeDied(ArrayList<Integer> location) {
+        if (this.levelAboveList.size() != 0) {
+            sendMessage(new DeadNodeMsg(location), this.levelAboveList);
+        } else if (getIndexOfSelf() != 0) {
+            sendMessage(new DeadNodeMsg(location), routingTable.get(0));
+        } else {
+            broadcast(new UpdateDeadNodesMsg(location));
+
+            System.out.println("Neighbour at following location died!");
+            System.out.println(location);
+            System.out.println();
+        }
     }
 
     /** Internal helper to be called while inserting a new node to the network */
@@ -427,26 +489,29 @@ public class Node {
         }
 
 
-        return traverse(msg, targetNode);
+        return traverse(msg, targetNode, false);
     }
 
     /** Internal helper that'll attempt to traverse a message to the root */
     private boolean traverseToRoot(TraverseMsg msg) {
-        return traverse(msg, routingTable.get(0));
+        return traverse(msg, routingTable.get(0), true);
     }
 
     /**
      * Internal helper that figures out where to traverse to in the structured network based on the passed key in the msg
      */
-    private boolean traverse(TraverseMsg msg, SimpleNode targetNode) {
+    private boolean traverse(TraverseMsg msg, SimpleNode targetNode, boolean traverseUpwards) {
+        // Based on the passed argument, determine the if we should bubble up in our tree or propagate downwards
+        ArrayList<SimpleNode> directionList = traverseUpwards ? levelAboveList : levelBelowList;
+
         if (targetNode.ip.equals(self.ip) && targetNode.port == self.port) {
             // ... else, if we already is the correct node, determine if we can go down further
-            if (levelBelowList.size() == 0) {
+            if (directionList.size() == 0) {
                 // ... if we can't, insert/get resource based on message
                 return true;
             } else {
                 // ... else, propagate the message down
-                sendMessage(msg, levelBelowList);
+                sendMessage(msg, directionList);
                 return false;
             }
         } else {
@@ -582,12 +647,18 @@ public class Node {
 
         try {
             checkSocket.connect(socketAddress, timeout);
-            checkSocket.close();
 
             // If we get here, then the connection succeeded.
             isAlive = true;
         } catch (IOException e) {
             isAlive = false;
+        }
+
+        // Ensure that socket is closed after we've checked
+        try {
+            checkSocket.close();
+        } catch (IOException e) {
+            e.printStackTrace();
         }
 
         return isAlive;
