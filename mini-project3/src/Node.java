@@ -332,6 +332,7 @@ public class Node {
 
             // Send resources to subNode and clear own resource table
             sendMessage(new SendResourcesMsg(resources, true), subNode);
+            backupResources = resources;
             resources.clear();
 
         } else {
