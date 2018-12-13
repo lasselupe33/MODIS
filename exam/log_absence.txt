@@ -1,0 +1,99 @@
+Network has been succesfully constructed
+
+Clients begin requesting the system
+
+Testing GET request on all nodes
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15000
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15001
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15002
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15003
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15004
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15005
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15006
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15007
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15008
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15009
+Got the following value via a GET command: 0. This command was sent to Lasses-MBP/192.168.43.241@15010
+
+
+Testing INC followed by GET request on all nodes
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 1
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 1
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 1
+Got the following value via a INC command: 1. This command was sent to Lasses-MBP/192.168.43.241@15000
+Got the following value via a GET command: 1. This command was sent to Lasses-MBP/192.168.43.241@15000
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 2
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 2
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 2
+Got the following value via a INC command: 2. This command was sent to Lasses-MBP/192.168.43.241@15001
+Got the following value via a GET command: 2. This command was sent to Lasses-MBP/192.168.43.241@15001
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 3
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 3
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 3
+Got the following value via a INC command: 3. This command was sent to Lasses-MBP/192.168.43.241@15002
+Got the following value via a GET command: 3. This command was sent to Lasses-MBP/192.168.43.241@15002
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 4
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 4
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 4
+Got the following value via a INC command: 4. This command was sent to Lasses-MBP/192.168.43.241@15003
+Got the following value via a GET command: 4. This command was sent to Lasses-MBP/192.168.43.241@15003
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 5
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 5
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 5
+Got the following value via a INC command: 5. This command was sent to Lasses-MBP/192.168.43.241@15004
+Got the following value via a GET command: 5. This command was sent to Lasses-MBP/192.168.43.241@15004
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 6
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 6
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 6
+Got the following value via a INC command: 6. This command was sent to Lasses-MBP/192.168.43.241@15005
+Got the following value via a GET command: 6. This command was sent to Lasses-MBP/192.168.43.241@15005
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 7
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 7
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 7
+Got the following value via a INC command: 7. This command was sent to Lasses-MBP/192.168.43.241@15006
+Got the following value via a GET command: 7. This command was sent to Lasses-MBP/192.168.43.241@15006
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 8
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 8
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 8
+Got the following value via a INC command: 8. This command was sent to Lasses-MBP/192.168.43.241@15007
+Got the following value via a GET command: 8. This command was sent to Lasses-MBP/192.168.43.241@15007
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 9
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 9
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 9
+Got the following value via a INC command: 9. This command was sent to Lasses-MBP/192.168.43.241@15008
+Got the following value via a GET command: 9. This command was sent to Lasses-MBP/192.168.43.241@15008
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 10
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 10
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 10
+Got the following value via a INC command: 10. This command was sent to Lasses-MBP/192.168.43.241@15009
+Got the following value via a GET command: 10. This command was sent to Lasses-MBP/192.168.43.241@15009
+
+Primary node at SimpleNode Lasses-MBP/192.168.43.241@15000 sat its value to 11
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15001 sat its value to 11
+Backup server at SimpleNode Lasses-MBP/192.168.43.241@15002 sat its value to 11
+Got the following value via a INC command: 11. This command was sent to Lasses-MBP/192.168.43.241@15010
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15010
+
+
+
+Testing GET on all nodes
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15000
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15001
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15002
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15003
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15004
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15005
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15006
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15007
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15008
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15009
+Got the following value via a GET command: 11. This command was sent to Lasses-MBP/192.168.43.241@15010

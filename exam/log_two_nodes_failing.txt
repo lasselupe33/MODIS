@@ -1,0 +1,23 @@
+Network has been succesfully constructed
+
+Primary node at SimpleNode Lasses-MBP/192.168.0.154@15000 sat its value to 1
+Backup server at SimpleNode Lasses-MBP/192.168.0.154@15001 sat its value to 1
+Backup server at SimpleNode Lasses-MBP/192.168.0.154@15002 sat its value to 1
+Got the following value via a INC command: 1. This command was sent to Lasses-MBP/192.168.0.154@15003
+Killing node!
+Got the following value via a GET command: 1. This command was sent to Lasses-MBP/192.168.0.154@15008
+Killing node!
+Primary node at SimpleNode Lasses-MBP/192.168.0.154@15000 sat its value to 2
+Backup server at SimpleNode Lasses-MBP/192.168.0.154@15001 sat its value to 2
+Backup server at SimpleNode Lasses-MBP/192.168.0.154@15002 sat its value to 2
+Got the following value via a INC command: 2. This command was sent to Lasses-MBP/192.168.0.154@15003
+Waiting a couple of seconds for system to restore
+Recognized following dead node in system: SimpleNode Lasses-MBP/192.168.0.154@15004
+
+SimpleNode Lasses-MBP/192.168.0.154@15006 Restored its neighbours
+SimpleNode Lasses-MBP/192.168.0.154@15005 Restored its neighbours
+Got the following value via a GET command: 2. This command was sent to Lasses-MBP/192.168.0.154@15000
+Recognized following dead node in system: SimpleNode Lasses-MBP/192.168.0.154@15006
+
+SimpleNode Lasses-MBP/192.168.0.154@15007 Restored its neighbours
+SimpleNode Lasses-MBP/192.168.0.154@15008 Restored its neighbours

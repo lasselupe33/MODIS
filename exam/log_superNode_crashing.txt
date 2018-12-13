@@ -1,0 +1,14 @@
+Network has been succesfully constructed
+
+Primary node at SimpleNode Lasses-MBP/192.168.0.154@15000 sat its value to 1
+Backup server at SimpleNode Lasses-MBP/192.168.0.154@15001 sat its value to 1
+Backup server at SimpleNode Lasses-MBP/192.168.0.154@15002 sat its value to 1
+Got the following value via a INC command: 1. This command was sent to Lasses-MBP/192.168.0.154@15003
+Killing node!
+Recognized following dead node in system: SimpleNode Lasses-MBP/192.168.0.154@15002
+
+Started election!
+SimpleNode Lasses-MBP/192.168.0.154@15004 Restored its neighbours
+SimpleNode Lasses-MBP/192.168.0.154@15003 Restored its neighbours
+New leader elected! SimpleNode Lasses-MBP/192.168.0.154@15009
+Got the following value via a GET command: 1. This command was sent to Lasses-MBP/192.168.0.154@15008
